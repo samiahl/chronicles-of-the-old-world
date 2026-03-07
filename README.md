@@ -38,13 +38,13 @@ Open three terminal windows.
 
 **Terminal 1 — Database (MongoDB)**
 ```bash
-cd /path/to/omat
+cd /path/to/root
 docker-compose up -d
 ```
 
 **Terminal 2 — Backend (Kotlin/Ktor API)**
 ```bash
-cd /path/to/omat/backend
+cd /path/to/root/backend
 ./gradlew run
 ```
 > The first run downloads dependencies and may take a minute or two.
@@ -52,7 +52,7 @@ cd /path/to/omat/backend
 
 **Terminal 3 — Frontend (React)**
 ```bash
-cd /path/to/omat/frontend
+cd /path/to/root/frontend
 npm run dev
 ```
 
