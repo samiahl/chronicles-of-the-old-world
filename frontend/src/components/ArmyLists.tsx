@@ -55,6 +55,11 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
   const [addingHeroicTo, setAddingHeroicTo] = useState<{ listId: string; charId: string } | null>(null)
   const [newHeroic, setNewHeroic] = useState('')
 
+  // OWB import
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importPlayerId, setImportPlayerId] = useState('')
+  const [importText, setImportText] = useState('')
+
   // ── existing handlers ────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,6 +260,36 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
     }
   }
 
+  // ── OWB import ───────────────────────────────────────────────────────────
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!importPlayerId) return toast('Select a commander', 'err')
+    if (!importText.trim()) return toast('Paste your OWB export first', 'err')
+    const parsed = parseOWBExport(importText)
+    try {
+      const created = await api.post<ArmyList>(`/campaigns/${campaignId}/army-lists`, {
+        playerId: importPlayerId,
+        name: parsed.name,
+        content: parsed.content,
+        gameSize: parsed.gameSize,
+      })
+      if (parsed.characters.length > 0 || parsed.units.length > 0) {
+        await api.put(`/campaigns/${campaignId}/army-lists/${created.id}`, {
+          characters: parsed.characters,
+          units: parsed.units,
+        })
+      }
+      setImportText('')
+      setImportPlayerId('')
+      setShowImportModal(false)
+      await onReload()
+      toast(`Imported: ${parsed.name}${parsed.gameSize ? ` · ${parsed.gameSize}pts` : ''}`)
+    } catch {
+      toast('Import failed', 'err')
+    }
+  }
+
   // ── render ────────────────────────────────────────────────────────────────
 
   return (
@@ -264,7 +299,10 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
           <h2 className="section-title">Army Muster Rolls</h2>
           <p className="section-desc">The forces marshalled for war</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Submit List</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-secondary" onClick={() => setShowImportModal(true)}>↓ Import OWB</button>
+          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Submit List</button>
+        </div>
       </div>
 
       {armyLists.length === 0 ? (
@@ -709,6 +747,35 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
         </div>
       )}
 
+      <Modal isOpen={showImportModal} onClose={() => setShowImportModal(false)} title="Import from Old World Builder" wide>
+        <form onSubmit={handleImportSubmit}>
+          <div className="form-group">
+            <label>Commander</label>
+            <select value={importPlayerId} onChange={e => setImportPlayerId(e.target.value)} required>
+              <option value="">— Select —</option>
+              {players.map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.faction ? ` (${p.faction})` : ''}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Paste OWB Export</label>
+            <textarea
+              rows={14}
+              value={importText}
+              onChange={e => setImportText(e.target.value)}
+              placeholder={'===Army Name [2000 pts]Warhammer: The Old World, Faction===\n++ Characters [200 pts] ++\n…'}
+              style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+            />
+          </div>
+          {importText.trim() && <OWBPreview text={importText} />}
+          <div className="form-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowImportModal(false)}>Cancel</button>
+            <button type="submit" className="btn-primary">Import List</button>
+          </div>
+        </form>
+      </Modal>
+
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Submit Muster Roll" wide>
         <form onSubmit={handleSubmit}>
           <div className="form-row-3">
@@ -742,6 +809,109 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
           </div>
         </form>
       </Modal>
+    </div>
+  )
+}
+
+// ── OWB parser ────────────────────────────────────────────────────────────────
+
+interface ParsedOWB {
+  name: string
+  gameSize: number | null
+  content: string
+  characters: Character[]
+  units: ArmyUnit[]
+}
+
+function parseOWBExport(text: string): ParsedOWB {
+  const lines = text.split('\n')
+  let name = 'Imported Army'
+  let gameSize: number | null = null
+
+  const titleLine = lines.find(l => l.trim().startsWith('==='))
+  if (titleLine) {
+    const m = titleLine.match(/===\s*(.+?)\s*\[(\d+)\s*pts?\]/i)
+    if (m) {
+      name = m[1].trim()
+      gameSize = parseInt(m[2])
+    }
+  }
+
+  const characters: Character[] = []
+  const units: ArmyUnit[] = []
+
+  let currentSection = ''
+  let currentEntryName = ''
+  let currentOptions: string[] = []
+
+  const flush = () => {
+    if (!currentEntryName) return
+    const notes = currentOptions.length ? currentOptions.join(', ') : null
+    const isCharSection = /character/i.test(currentSection)
+    if (isCharSection) {
+      const isCaster = currentOptions.some(o =>
+        /wizard|sorcerer|shaman|priest|caster|warlock/i.test(o)
+      )
+      characters.push({
+        id: crypto.randomUUID(),
+        name: currentEntryName,
+        rank: null,
+        xp: null,
+        modifiers: null,
+        notes,
+        magicalItems: [],
+        isCaster,
+        misfires: 0,
+        miscasts: 0,
+        perfectInvocations: 0,
+        heroicActions: [],
+      })
+    } else {
+      units.push({ id: crypto.randomUUID(), name: currentEntryName, notes })
+    }
+    currentEntryName = ''
+    currentOptions = []
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line || line === '---' || /^Created with/i.test(line)) continue
+    if (line.startsWith('===')) continue
+
+    // Section header: ++ Name [pts] ++
+    if (line.startsWith('++') && line.endsWith('++')) {
+      flush()
+      const m = line.match(/\+\+\s*(.+?)\s*(?:\[\d+[^\]]*\])?\s*\+\+/)
+      currentSection = m ? m[1].trim() : ''
+      continue
+    }
+
+    // Option line: - something
+    if (line.startsWith('-') && currentEntryName) {
+      currentOptions.push(line.slice(1).trim())
+      continue
+    }
+
+    // Entry line: Name [pts] or Count Name [pts]
+    const entryMatch = line.match(/^(.+?)\s*\[\d+\s*pts?\]/i)
+    if (entryMatch && currentSection) {
+      flush()
+      currentEntryName = entryMatch[1].trim()
+    }
+  }
+  flush()
+
+  return { name, gameSize, content: text, characters, units }
+}
+
+function OWBPreview({ text }: { text: string }) {
+  const p = parseOWBExport(text)
+  return (
+    <div className="owb-preview">
+      <span className="owb-preview-name">{p.name}</span>
+      {p.gameSize != null && <span className="owb-preview-pts">{p.gameSize} pts</span>}
+      <span className="owb-preview-stat">{p.characters.length} character{p.characters.length !== 1 ? 's' : ''}</span>
+      <span className="owb-preview-stat">{p.units.length} unit{p.units.length !== 1 ? 's' : ''}</span>
     </div>
   )
 }

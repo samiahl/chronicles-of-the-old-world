@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api, setToken } from './api/client'
-import type { Player, Battle, ArmyList, Narrative, ScoreboardEntry, User, Campaign } from './types'
+import type { Player, Battle, ArmyList, Narrative, ScoreboardEntry, User, Campaign, ScheduledGame, UserCampaignSummary, Challenge } from './types'
 import Annals from './components/Annals'
 import CampaignChronicle from './components/Campaign'
 import ArmyLists from './components/ArmyLists'
 import Players from './components/Players'
+import Calendar from './components/Calendar'
+import ChallengeBoard from './components/ChallengeBoard'
 import LoginPage from './components/LoginPage'
 import CampaignList from './components/CampaignList'
 
-type Tab = 'annals' | 'chronicle' | 'armies' | 'players'
+type Tab = 'annals' | 'chronicle' | 'armies' | 'players' | 'calendar' | 'challenges'
 
 interface AppData {
   players: Player[]
@@ -16,6 +18,8 @@ interface AppData {
   armyLists: ArmyList[]
   narratives: Narrative[]
   scoreboard: ScoreboardEntry[]
+  scheduledGames: ScheduledGame[]
+  challenges: Challenge[]
 }
 
 function loadStoredUser(): User | null {
@@ -37,6 +41,8 @@ export default function App() {
     armyLists: [],
     narratives: [],
     scoreboard: [],
+    scheduledGames: [],
+    challenges: [],
   })
   const [loading, setLoading] = useState(false)
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'ok' | 'err' }[]>([])
@@ -52,14 +58,16 @@ export default function App() {
     if (!cid) return
     setLoading(true)
     try {
-      const [players, battles, armyLists, narratives, scoreboard] = await Promise.all([
+      const [players, battles, armyLists, narratives, scoreboard, scheduledGames, challenges] = await Promise.all([
         api.get<Player[]>(`/campaigns/${cid}/players`),
         api.get<Battle[]>(`/campaigns/${cid}/battles`),
         api.get<ArmyList[]>(`/campaigns/${cid}/army-lists`),
         api.get<Narrative[]>(`/campaigns/${cid}/narratives`),
         api.get<ScoreboardEntry[]>(`/campaigns/${cid}/scoreboard`),
+        api.get<ScheduledGame[]>(`/campaigns/${cid}/calendar`),
+        api.get<Challenge[]>(`/campaigns/${cid}/challenges`),
       ])
-      setData({ players, battles, armyLists, narratives, scoreboard })
+      setData({ players, battles, armyLists, narratives, scoreboard, scheduledGames, challenges })
     } catch {
       toast('Failed to load campaign data — is the backend running?', 'err')
     } finally {
@@ -88,7 +96,7 @@ export default function App() {
     localStorage.removeItem('auth_user')
     setAuthUser(null)
     setCurrentCampaign(null)
-    setData({ players: [], battles: [], armyLists: [], narratives: [], scoreboard: [] })
+    setData({ players: [], battles: [], armyLists: [], narratives: [], scoreboard: [], scheduledGames: [], challenges: [] })
   }
 
   const handleSelectCampaign = (campaign: Campaign) => {
@@ -123,11 +131,18 @@ export default function App() {
   }
   const isCreator = authUser.id === currentCampaign.createdBy
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'annals', label: 'The Annals' },
-    { id: 'chronicle', label: 'The Chronicle' },
-    { id: 'armies', label: 'Army Lists' },
-    { id: 'players', label: 'Players' },
+  const myPlayer = data.players.find(p => p.userId === authUser.id)
+  const incomingChallenges = myPlayer
+    ? data.challenges.filter(c => c.toPlayerId === myPlayer.id && c.status === 'open').length
+    : 0
+
+  const tabs: { id: Tab; label: string; badge?: number }[] = [
+    { id: 'annals',     label: 'The Annals' },
+    { id: 'chronicle',  label: 'The Chronicle' },
+    { id: 'armies',     label: 'Army Lists' },
+    { id: 'players',    label: 'Players' },
+    { id: 'calendar',   label: 'Calendar' },
+    { id: 'challenges', label: 'Challenge Board', badge: incomingChallenges || undefined },
   ]
 
   return (
@@ -173,6 +188,7 @@ export default function App() {
             onClick={() => setTab(t.id)}
           >
             {t.label}
+            {t.badge ? <span className="tab-badge">{t.badge}</span> : null}
           </button>
         ))}
       </nav>
@@ -217,8 +233,30 @@ export default function App() {
               <Players
                 campaignId={currentCampaign.id}
                 players={data.players}
+                armyLists={data.armyLists}
+                battles={data.battles}
                 authUser={authUser}
                 currentCampaign={currentCampaign}
+                onReload={reload}
+                toast={toast}
+              />
+            )}
+            {tab === 'calendar' && (
+              <Calendar
+                campaignId={currentCampaign.id}
+                scheduledGames={data.scheduledGames}
+                players={data.players}
+                authUser={authUser}
+                onReload={reload}
+                toast={toast}
+              />
+            )}
+            {tab === 'challenges' && (
+              <ChallengeBoard
+                campaignId={currentCampaign.id}
+                challenges={data.challenges}
+                players={data.players}
+                authUser={authUser}
                 onReload={reload}
                 toast={toast}
               />

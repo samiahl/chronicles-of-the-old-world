@@ -70,6 +70,7 @@ export interface Battle {
   openPoints1: number | null
   openPoints2: number | null
   images: string[]
+  notes: string | null
   createdAt: string
 }
 
@@ -118,6 +119,40 @@ export interface Narrative {
   title: string
   content: string
   author: string | null
+  createdAt: string
+}
+
+export interface Challenge {
+  id: string
+  campaignId: string
+  fromPlayerId: string
+  fromPlayerName: string
+  toPlayerId: string
+  toPlayerName: string
+  message: string
+  status: 'open' | 'accepted' | 'declined' | 'resolved'
+  createdAt: string
+}
+
+export interface UserCampaignSummary {
+  id: string
+  name: string
+  status: string
+  type: string
+  membersCount: number
+  createdAt: string
+}
+
+export interface ScheduledGame {
+  id: string
+  campaignId: string
+  date: string
+  player1Id: string
+  player1Name: string
+  player2Id: string
+  player2Name: string
+  notes: string | null
+  createdBy: string | null
   createdAt: string
 }
 

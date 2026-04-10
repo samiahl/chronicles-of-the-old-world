@@ -23,6 +23,7 @@ data class Battle(
     val openPoints1: Int? = null,   // manually assigned narrative points for player 1
     val openPoints2: Int? = null,   // manually assigned narrative points for player 2
     val images: List<String> = emptyList(),  // base64-encoded images
+    val notes: String? = null,
     val createdAt: String,
 )
 
@@ -41,6 +42,7 @@ data class CreateBattleRequest(
     val openPoints1: Int? = null,
     val openPoints2: Int? = null,
     val images: List<String> = emptyList(),
+    val notes: String? = null,
 )
 
 @Serializable
@@ -52,4 +54,5 @@ data class UpdateBattleRequest(
     val openPoints1: Int? = null,
     val openPoints2: Int? = null,
     val images: List<String>? = null,
+    val notes: String? = null,
 )

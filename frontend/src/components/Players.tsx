@@ -1,22 +1,26 @@
 import { useState } from 'react'
-import type { Player, Campaign, User } from '../types'
+import type { Player, Campaign, User, ArmyList, Battle } from '../types'
 import { api } from '../api/client'
 import Modal from './Modal'
 import CampaignJoinRequests from './CampaignJoinRequests'
+import PlayerProfile from './PlayerProfile'
 
 interface Props {
   campaignId: string
   players: Player[]
+  armyLists: ArmyList[]
+  battles: Battle[]
   authUser: User
   currentCampaign: Campaign
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
 
-export default function Players({ campaignId, players, authUser, currentCampaign, onReload, toast }: Props) {
+export default function Players({ campaignId, players, armyLists, battles, authUser, currentCampaign, onReload, toast }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [name, setName] = useState('')
   const [faction, setFaction] = useState('')
+  const [profilePlayer, setProfilePlayer] = useState<Player | null>(null)
 
   const isCreator = currentCampaign.createdBy === authUser.id
 
@@ -69,18 +73,28 @@ export default function Players({ campaignId, players, authUser, currentCampaign
       ) : (
         <div className="players-grid">
           {players.map(p => (
-            <div key={p.id} className="player-card">
-              <div>
+            <div key={p.id} className="player-card" onClick={() => setProfilePlayer(p)} style={{ cursor: 'pointer' }}>
+              <div className="player-card-avatar">{p.name.charAt(0).toUpperCase()}</div>
+              <div className="player-card-info">
                 <div className="player-name">{p.name}</div>
                 <div className="player-faction">{p.faction ?? 'Unknown faction'}</div>
                 <div className="player-date">Enlisted {fmtDate(p.createdAt)}</div>
               </div>
               {isCreator && (
-                <button className="btn-danger" onClick={() => handleDelete(p.id)}>Remove</button>
+                <button className="btn-danger" onClick={e => { e.stopPropagation(); handleDelete(p.id) }}>Remove</button>
               )}
             </div>
           ))}
         </div>
+      )}
+
+      {profilePlayer && (
+        <PlayerProfile
+          player={profilePlayer}
+          armyLists={armyLists}
+          battles={battles}
+          onClose={() => setProfilePlayer(null)}
+        />
       )}
 
       {isCreator && (

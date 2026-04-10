@@ -21,6 +21,7 @@ interface BattleForm {
   player2Vp: string
   player1Report: string
   player2Report: string
+  notes: string
 }
 
 const emptyForm = (): BattleForm => ({
@@ -34,6 +35,7 @@ const emptyForm = (): BattleForm => ({
   player2Vp: '0',
   player1Report: '',
   player2Report: '',
+  notes: '',
 })
 
 export default function Battles({ battles, players, onReload, toast }: Props) {
@@ -60,6 +62,7 @@ export default function Battles({ battles, players, onReload, toast }: Props) {
         player2Vp: parseInt(form.player2Vp) || 0,
         player1Report: form.player1Report || null,
         player2Report: form.player2Report || null,
+        notes: form.notes || null,
       })
       setForm(emptyForm)
       setShowModal(false)
@@ -126,6 +129,10 @@ export default function Battles({ battles, players, onReload, toast }: Props) {
                     {p2wins && <div className="victory-badge">Victory</div>}
                   </div>
                 </div>
+
+                {b.notes && (
+                  <div className="battle-notes">{b.notes}</div>
+                )}
 
                 {hasReports && (
                   <div className="reports-section">
@@ -214,6 +221,12 @@ export default function Battles({ battles, players, onReload, toast }: Props) {
               <textarea rows={6} value={form.player2Report} onChange={set('player2Report')}
                 placeholder="From the perspective of Player 2…" />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label>Notes</label>
+            <textarea rows={3} value={form.notes} onChange={set('notes')}
+              placeholder="Terrain used, house rules, anything worth remembering…" />
           </div>
 
           <div className="form-actions">

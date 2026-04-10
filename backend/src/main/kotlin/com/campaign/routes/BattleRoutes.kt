@@ -59,6 +59,7 @@ fun Route.battleRoutes(db: MongoDatabase) {
                 .append("openPoints1", req.openPoints1)
                 .append("openPoints2", req.openPoints2)
                 .append("images", req.images)
+                .append("notes", req.notes)
                 .append("createdAt", Instant.now().toString())
             battles.insertOne(doc)
             val playerMap = players.find(Filters.eq("campaignId", campaignId)).toList()
@@ -78,6 +79,7 @@ fun Route.battleRoutes(db: MongoDatabase) {
             req.openPoints1?.let { updates.append("openPoints1", it) }
             req.openPoints2?.let { updates.append("openPoints2", it) }
             req.images?.let { updates.append("images", it) }
+            req.notes?.let { updates.append("notes", it) }
             if (updates.isNotEmpty()) {
                 try {
                     battles.updateOne(Filters.eq("_id", ObjectId(id)), Document("\$set", updates))
@@ -120,6 +122,7 @@ fun Document.toBattle(playerMap: Map<String, Document>): Battle {
         openPoints1 = getInteger("openPoints1"),
         openPoints2 = getInteger("openPoints2"),
         images = (get("images") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+        notes = getString("notes"),
         createdAt = getString("createdAt") ?: Instant.now().toString(),
     )
 }

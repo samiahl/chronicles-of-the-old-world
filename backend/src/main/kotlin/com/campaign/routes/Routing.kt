@@ -12,12 +12,16 @@ fun Application.configureRouting(db: MongoDatabase, jwtSecret: String, jwtIssuer
             campaignRoutes(db)
 
             authenticate("auth-jwt") {
+                userRoutes(db)
+
                 route("/campaigns/{campaignId}") {
                     playerRoutes(db)
                     battleRoutes(db)
                     armyListRoutes(db)
                     narrativeRoutes(db)
                     scoreboardRoutes(db)
+                    calendarRoutes(db)
+                    challengeRoutes(db)
                 }
             }
         }
