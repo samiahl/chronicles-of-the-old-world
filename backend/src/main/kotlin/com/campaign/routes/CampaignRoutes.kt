@@ -103,7 +103,7 @@ fun Route.campaignRoutes(db: MongoDatabase) {
                         Filters.eq("_id", ObjectId(campaignId)),
                         Updates.push("pendingRequests", requestDoc)
                     )
-                    call.respond(HttpStatusCode.OK)
+                    call.respond(HttpStatusCode.NoContent)
                 } catch (_: IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest)
                 }
