@@ -75,6 +75,35 @@ fun Route.authRoutes(db: MongoDatabase, jwtSecret: String, jwtIssuer: String, jw
                 call.respond(userDoc.toUserPublic())
             }
 
+            put("/me") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val req = call.receive<UpdateProfileRequest>()
+                if (req.username != null) {
+                    if (req.username.isBlank()) return@put call.respond(HttpStatusCode.BadRequest)
+                    val existing = users.find(Filters.eq("username", req.username)).toList().firstOrNull()
+                    if (existing != null && existing.getObjectId("_id").toHexString() != userId) {
+                        return@put call.respond(HttpStatusCode.Conflict)
+                    }
+                    users.updateOne(
+                        Filters.eq("_id", ObjectId(userId)),
+                        Document("\$set", Document("username", req.username))
+                    )
+                }
+                if (!req.password.isNullOrBlank()) {
+                    val hash = BCrypt.hashpw(req.password, BCrypt.gensalt())
+                    users.updateOne(
+                        Filters.eq("_id", ObjectId(userId)),
+                        Document("\$set", Document("passwordHash", hash))
+                    )
+                }
+                val userDoc = users.find(Filters.eq("_id", ObjectId(userId))).toList().firstOrNull()
+                    ?: return@put call.respond(HttpStatusCode.NotFound)
+                val newUsername = userDoc.getString("username") ?: ""
+                val token = makeToken(userId, newUsername, jwtSecret, jwtIssuer, jwtAudience)
+                call.respond(AuthResponse(token = token, user = userDoc.toUserPublic()))
+            }
+
             put("/me/avatar") {
                 val principal = call.principal<JWTPrincipal>()!!
                 val userId = principal.payload.getClaim("userId").asString()

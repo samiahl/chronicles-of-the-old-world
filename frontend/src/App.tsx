@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api, setToken } from './api/client'
 import type { Player, Battle, ArmyList, Narrative, ScoreboardEntry, User, Campaign, ScheduledGame, UserCampaignSummary, Challenge } from './types'
 import Annals from './components/Annals'
+import Modal from './components/Modal'
 import CampaignChronicle from './components/Campaign'
 import ArmyLists from './components/ArmyLists'
 import Players from './components/Players'
@@ -46,6 +47,11 @@ export default function App() {
   })
   const [loading, setLoading] = useState(false)
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'ok' | 'err' }[]>([])
+  const [showCampaignEdit, setShowCampaignEdit] = useState(false)
+  const [campaignEditForm, setCampaignEditForm] = useState({ name: '', description: '', theme: '' })
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [profileForm, setProfileForm] = useState({ username: '', newPassword: '', confirmPassword: '' })
+  const profileImageRef = useRef<HTMLInputElement>(null)
 
   const toast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
     const id = Date.now()
@@ -104,6 +110,74 @@ export default function App() {
     setTab('annals')
   }
 
+  const openCampaignEdit = () => {
+    setCampaignEditForm({
+      name: currentCampaign!.name,
+      description: currentCampaign!.description ?? '',
+      theme: currentCampaign!.theme ?? '',
+    })
+    setShowCampaignEdit(true)
+  }
+
+  const handleSaveCampaign = async () => {
+    try {
+      const updated = await api.put<Campaign>(`/campaigns/${currentCampaign!.id}`, {
+        name: campaignEditForm.name,
+        description: campaignEditForm.description || null,
+        theme: campaignEditForm.theme || null,
+      })
+      setCurrentCampaign(updated)
+      setShowCampaignEdit(false)
+      toast('Campaign updated')
+    } catch {
+      toast('Failed to update campaign', 'err')
+    }
+  }
+
+  const openProfileModal = () => {
+    setProfileForm({ username: authUser!.username, newPassword: '', confirmPassword: '' })
+    setShowProfileModal(true)
+  }
+
+  const handleSaveProfile = async () => {
+    if (profileForm.newPassword && profileForm.newPassword !== profileForm.confirmPassword) {
+      toast('Passwords do not match', 'err')
+      return
+    }
+    try {
+      const res = await api.put<{ token: string; user: User }>('/auth/me', {
+        username: profileForm.username || null,
+        password: profileForm.newPassword || null,
+      })
+      setToken(res.token)
+      localStorage.setItem('auth_user', JSON.stringify(res.user))
+      setAuthUser(res.user)
+      setShowProfileModal(false)
+      toast('Profile updated')
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status
+      toast(status === 409 ? 'Username already taken' : 'Failed to update profile', 'err')
+    }
+  }
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async ev => {
+      const b64 = ev.target?.result as string
+      try {
+        const updated = await api.put<User>('/auth/me/avatar', { picture: b64 })
+        localStorage.setItem('auth_user', JSON.stringify(updated))
+        setAuthUser(updated)
+        toast('Avatar updated')
+      } catch {
+        toast('Failed to update avatar', 'err')
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleAdvancePhase = async () => {
     try {
       const updated = await api.post<Campaign>(`/campaigns/${currentCampaign!.id}/advance-phase`)
@@ -137,7 +211,7 @@ export default function App() {
     : 0
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'annals',     label: 'The Annals' },
+    { id: 'annals',     label: 'Battle Reports' },
     { id: 'chronicle',  label: 'The Chronicle' },
     { id: 'armies',     label: 'Army Lists' },
     { id: 'players',    label: 'Players' },
@@ -150,7 +224,12 @@ export default function App() {
       <header>
         <div className="header-line" />
         <h1 className="campaign-title">⚔ {currentCampaign.name} ⚔</h1>
-        <p className="campaign-subtitle">{currentCampaign.theme ?? 'The Old World Campaign Manager'}</p>
+        <p className="campaign-subtitle">
+          {currentCampaign.theme ?? 'The Old World Campaign Manager'}
+          {isCreator && (
+            <button className="btn-ghost btn-sm" style={{ marginLeft: '0.75rem' }} onClick={openCampaignEdit}>Edit</button>
+          )}
+        </p>
         {currentCampaign.type === 'path_of_glory' && (
           <div className="campaign-type-line">
             <span className="phase-display">{phaseLabel(currentCampaign)}</span>
@@ -173,7 +252,7 @@ export default function App() {
             {authUser.profilePicture && (
               <img src={authUser.profilePicture} alt="" className="user-avatar" />
             )}
-            <span className="user-name">{authUser.username}</span>
+            <button className="btn-ghost user-name" onClick={openProfileModal}>{authUser.username}</button>
             <button className="btn-ghost" onClick={handleLogout}>Sign out</button>
           </div>
         </div>
@@ -207,6 +286,7 @@ export default function App() {
                 battles={data.battles}
                 players={data.players}
                 scoreboard={data.scoreboard}
+                scheduledGames={data.scheduledGames}
                 onReload={reload}
                 toast={toast}
               />
@@ -264,6 +344,50 @@ export default function App() {
           </>
         )}
       </main>
+
+      <Modal isOpen={showCampaignEdit} onClose={() => setShowCampaignEdit(false)} title="Edit Campaign">
+        <div className="form-group">
+          <label>Campaign Name</label>
+          <input value={campaignEditForm.name} onChange={e => setCampaignEditForm(f => ({ ...f, name: e.target.value }))} required />
+        </div>
+        <div className="form-group">
+          <label>Theme <span className="form-optional">(optional)</span></label>
+          <input value={campaignEditForm.theme} onChange={e => setCampaignEditForm(f => ({ ...f, theme: e.target.value }))} placeholder="The Old World Campaign Manager" />
+        </div>
+        <div className="form-group">
+          <label>Description <span className="form-optional">(optional)</span></label>
+          <textarea rows={3} value={campaignEditForm.description} onChange={e => setCampaignEditForm(f => ({ ...f, description: e.target.value }))} />
+        </div>
+        <div className="form-actions">
+          <button className="btn-secondary" onClick={() => setShowCampaignEdit(false)}>Cancel</button>
+          <button className="btn-primary" onClick={handleSaveCampaign} disabled={!campaignEditForm.name.trim()}>Save</button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} title="Profile Settings">
+        <div className="form-group">
+          <label>Username</label>
+          <input value={profileForm.username} onChange={e => setProfileForm(f => ({ ...f, username: e.target.value }))} />
+        </div>
+        <div className="form-group">
+          <label>New Password <span className="form-optional">(leave blank to keep current)</span></label>
+          <input type="password" value={profileForm.newPassword} onChange={e => setProfileForm(f => ({ ...f, newPassword: e.target.value }))} />
+        </div>
+        {profileForm.newPassword && (
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <input type="password" value={profileForm.confirmPassword} onChange={e => setProfileForm(f => ({ ...f, confirmPassword: e.target.value }))} />
+          </div>
+        )}
+        <div className="form-group">
+          <label>Profile Picture <span className="form-optional">(optional)</span></label>
+          <input ref={profileImageRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="file-input" />
+        </div>
+        <div className="form-actions">
+          <button className="btn-secondary" onClick={() => setShowProfileModal(false)}>Cancel</button>
+          <button className="btn-primary" onClick={handleSaveProfile}>Save</button>
+        </div>
+      </Modal>
 
       <div className="toast-container">
         {toasts.map(t => (

@@ -23,6 +23,7 @@ data class ArmyUnit(
     val id: String,
     val name: String,
     val notes: String? = null,
+    val xp: Int? = null,
 )
 
 @Serializable

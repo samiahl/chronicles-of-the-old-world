@@ -15,7 +15,7 @@ function blankChar() {
   return { name: '', rank: '', xp: '', isCaster: false, modifiers: '', notes: '', magicalItems: '' }
 }
 function blankUnit() {
-  return { name: '', notes: '' }
+  return { name: '', notes: '', xp: '' }
 }
 
 export default function ArmyLists({ campaignId, armyLists, players, onReload, toast }: Props) {
@@ -223,6 +223,7 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
       id: crypto.randomUUID(),
       name: newUnit.name.trim(),
       notes: newUnit.notes.trim() || null,
+      xp: newUnit.xp ? parseInt(newUnit.xp) : null,
     }
     try {
       await putUnits(listId, [...(a.units ?? []), unit])
@@ -671,6 +672,13 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                                       placeholder="Unit name"
                                     />
                                     <input
+                                      type="number"
+                                      value={eu.xp ?? ''}
+                                      onChange={e => setEditingUnit({ ...editingUnit!, unit: { ...eu, xp: e.target.value ? parseInt(e.target.value) : null } })}
+                                      placeholder="XP"
+                                      style={{ width: '5rem' }}
+                                    />
+                                    <input
                                       value={eu.notes ?? ''}
                                       onChange={e => setEditingUnit({ ...editingUnit!, unit: { ...eu, notes: e.target.value || null } })}
                                       placeholder="Notes…"
@@ -684,6 +692,7 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                                   <div className="unit-view-row">
                                     <div className="unit-text">
                                       <span className="unit-name">{u.name}</span>
+                                      {u.xp != null && <span className="xp-badge">{u.xp} XP</span>}
                                       {u.notes && <span className="unit-notes"> — {u.notes}</span>}
                                     </div>
                                     <div className="unit-actions">
@@ -706,6 +715,13 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                               value={newUnit.name}
                               onChange={e => setNewUnit({ ...newUnit, name: e.target.value })}
                               placeholder="Unit name"
+                            />
+                            <input
+                              type="number"
+                              value={newUnit.xp}
+                              onChange={e => setNewUnit({ ...newUnit, xp: e.target.value })}
+                              placeholder="XP"
+                              style={{ width: '5rem' }}
                             />
                             <input
                               value={newUnit.notes}

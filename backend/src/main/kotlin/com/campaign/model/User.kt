@@ -41,3 +41,9 @@ data class AuthResponse(
 data class UpdateAvatarRequest(
     val picture: String,
 )
+
+@Serializable
+data class UpdateProfileRequest(
+    val username: String? = null,
+    val password: String? = null,
+)

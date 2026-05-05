@@ -27,6 +27,7 @@ const emptyForm = (date = ''): GameForm => ({
 })
 
 export default function Calendar({ campaignId, scheduledGames, players, authUser, onReload, toast }: Props) {
+  const myPlayer = players.find(p => p.userId === authUser.id)
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth()) // 0-indexed
@@ -144,16 +145,21 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
                 title={isPast ? undefined : 'Click to schedule a game'}
               >
                 <span className="cal-day-num">{day}</span>
-                {games.map(g => (
-                  <div key={g.id} className="cal-game-chip" onClick={e => e.stopPropagation()}>
-                    <span className="cal-chip-text">{g.player1Name} vs {g.player2Name}</span>
-                    <button
-                      className="cal-chip-del"
-                      onClick={e => { e.stopPropagation(); handleDelete(g.id) }}
-                      title="Remove"
-                    >×</button>
-                  </div>
-                ))}
+                {games.map(g => {
+                  const canDelete = myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
+                  return (
+                    <div key={g.id} className="cal-game-chip" onClick={e => e.stopPropagation()}>
+                      <span className="cal-chip-text">{g.player1Name} vs {g.player2Name}</span>
+                      {canDelete && (
+                        <button
+                          className="cal-chip-del"
+                          onClick={e => { e.stopPropagation(); handleDelete(g.id) }}
+                          title="Remove"
+                        >×</button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
@@ -165,18 +171,21 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
         <div className="cal-upcoming">
           <h3 className="cal-upcoming-title">Upcoming Battles</h3>
           <div className="cal-upcoming-list">
-            {upcoming.map(g => (
-              <div key={g.id} className="cal-upcoming-item">
-                <div className="cal-upcoming-date">{fmtDisplay(g.date)}</div>
-                <div className="cal-upcoming-matchup">
-                  <span className="cal-upcoming-player">{g.player1Name}</span>
-                  <span className="cal-upcoming-vs">vs</span>
-                  <span className="cal-upcoming-player">{g.player2Name}</span>
+            {upcoming.map(g => {
+              const canDelete = myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
+              return (
+                <div key={g.id} className="cal-upcoming-item">
+                  <div className="cal-upcoming-date">{fmtDisplay(g.date)}</div>
+                  <div className="cal-upcoming-matchup">
+                    <span className="cal-upcoming-player">{g.player1Name}</span>
+                    <span className="cal-upcoming-vs">vs</span>
+                    <span className="cal-upcoming-player">{g.player2Name}</span>
+                  </div>
+                  {g.notes && <div className="cal-upcoming-notes">{g.notes}</div>}
+                  {canDelete && <button className="btn-danger" onClick={() => handleDelete(g.id)}>Remove</button>}
                 </div>
-                {g.notes && <div className="cal-upcoming-notes">{g.notes}</div>}
-                <button className="btn-danger" onClick={() => handleDelete(g.id)}>Remove</button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

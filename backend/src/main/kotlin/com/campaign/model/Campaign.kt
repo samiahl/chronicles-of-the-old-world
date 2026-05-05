@@ -43,6 +43,13 @@ data class CampaignJoinRequest(
 )
 
 @Serializable
+data class UpdateCampaignRequest(
+    val name: String,
+    val description: String? = null,
+    val theme: String? = null,
+)
+
+@Serializable
 data class CreateCampaignRequest(
     val name: String,
     val description: String? = null,

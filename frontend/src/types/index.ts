@@ -93,6 +93,7 @@ export interface ArmyUnit {
   id: string
   name: string
   notes: string | null
+  xp: number | null
 }
 
 export interface ArmyList {

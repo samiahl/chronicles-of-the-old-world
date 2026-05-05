@@ -77,6 +77,32 @@ fun Route.campaignRoutes(db: MongoDatabase) {
                 call.respond(HttpStatusCode.Created, doc.toCampaign())
             }
 
+            put("/{id}") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val id = call.parameters["id"] ?: return@put call.respond(HttpStatusCode.BadRequest)
+                val req = call.receive<UpdateCampaignRequest>()
+                try {
+                    val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().firstOrNull()
+                        ?: return@put call.respond(HttpStatusCode.NotFound)
+                    if (campaignDoc.getString("createdBy") != userId) {
+                        return@put call.respond(HttpStatusCode.Forbidden)
+                    }
+                    campaigns.updateOne(
+                        Filters.eq("_id", ObjectId(id)),
+                        Document("\$set", Document()
+                            .append("name", req.name)
+                            .append("description", req.description)
+                            .append("theme", req.theme)
+                        )
+                    )
+                    val updated = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().first()
+                    call.respond(updated.toCampaign())
+                } catch (_: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+
             post("/{id}/request-join") {
                 val principal = call.principal<JWTPrincipal>()!!
                 val userId = principal.payload.getClaim("userId").asString()

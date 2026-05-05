@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import type { Battle, Player, ScoreboardEntry } from '../types'
+import type { Battle, Player, ScoreboardEntry, ScheduledGame } from '../types'
 import { api } from '../api/client'
 import Modal from './Modal'
 
@@ -8,6 +8,7 @@ interface Props {
   battles: Battle[]
   players: Player[]
   scoreboard: ScoreboardEntry[]
+  scheduledGames: ScheduledGame[]
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
@@ -44,9 +45,10 @@ const emptyForm = (): BattleForm => ({
   images: [],
 })
 
-export default function Annals({ campaignId, battles, players, scoreboard, onReload, toast }: Props) {
+export default function Annals({ campaignId, battles, players, scoreboard, scheduledGames, onReload, toast }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<BattleForm>(emptyForm)
+  const [linkedGameId, setLinkedGameId] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{ player1Report: string; player2Report: string; openPoints1: string; openPoints2: string }>({
@@ -95,9 +97,10 @@ export default function Annals({ campaignId, battles, players, scoreboard, onRel
         images: form.images,
       })
       setForm(emptyForm())
+      setLinkedGameId('')
       setShowModal(false)
       await onReload()
-      toast('Battle recorded in the annals')
+      toast('Battle recorded')
     } catch {
       toast('Failed to record battle', 'err')
     }
@@ -133,14 +136,14 @@ export default function Annals({ campaignId, battles, players, scoreboard, onRel
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">The Annals</h2>
+          <h2 className="section-title">Battle Reports</h2>
           <p className="section-desc">Every clash recorded for posterity</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-secondary" onClick={() => setShowStandings(!showStandings)}>
             {showStandings ? 'Hide Standings' : 'Show Standings'}
           </button>
-          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Log Battle</button>
+          <button className="btn-primary" onClick={() => { setForm(emptyForm()); setLinkedGameId(''); setShowModal(true) }}>+ Log Battle</button>
         </div>
       </div>
 
@@ -318,6 +321,24 @@ export default function Annals({ campaignId, battles, players, scoreboard, onRel
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Record Battle" wide>
         <form onSubmit={handleSubmit}>
+          {scheduledGames.length > 0 && (
+            <div className="form-group">
+              <label>Link to Scheduled Game <span className="form-optional">(optional)</span></label>
+              <select value={linkedGameId} onChange={e => {
+                const id = e.target.value
+                setLinkedGameId(id)
+                if (id) {
+                  const g = scheduledGames.find(x => x.id === id)
+                  if (g) setForm(f => ({ ...f, date: g.date, player1Id: g.player1Id, player2Id: g.player2Id }))
+                }
+              }}>
+                <option value="">— Enter manually —</option>
+                {scheduledGames.map(g => (
+                  <option key={g.id} value={g.id}>{fmtDate(g.date)} · {g.player1Name} vs {g.player2Name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="form-row-3">
             <div className="form-group">
               <label>Date</label>
