@@ -22,7 +22,7 @@ data class Battle(
     val player2Report: String? = null,
     val openPoints1: Int? = null,   // manually assigned narrative points for player 1
     val openPoints2: Int? = null,   // manually assigned narrative points for player 2
-    val images: List<String> = emptyList(),  // base64-encoded images
+    val imageUrls: List<String> = emptyList(),  // Cloudinary URLs (not yet implemented)
     val notes: String? = null,
     val createdAt: String,
 )
@@ -41,7 +41,7 @@ data class CreateBattleRequest(
     val player2Report: String? = null,
     val openPoints1: Int? = null,
     val openPoints2: Int? = null,
-    val images: List<String> = emptyList(),
+    val imageUrls: List<String> = emptyList(),  // Cloudinary URLs (not yet implemented)
     val notes: String? = null,
 )
 
@@ -53,6 +53,6 @@ data class UpdateBattleRequest(
     val gameSize: Int? = null,
     val openPoints1: Int? = null,
     val openPoints2: Int? = null,
-    val images: List<String>? = null,
+    val imageUrls: List<String>? = null,  // Cloudinary URLs (not yet implemented)
     val notes: String? = null,
 )

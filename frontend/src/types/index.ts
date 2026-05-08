@@ -69,7 +69,7 @@ export interface Battle {
   player2Report: string | null
   openPoints1: number | null
   openPoints2: number | null
-  images: string[]
+  imageUrls: string[]  // Cloudinary URLs (not yet implemented)
   notes: string | null
   createdAt: string
 }

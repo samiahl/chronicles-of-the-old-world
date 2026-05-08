@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import type { Battle, Player, ScoreboardEntry, ScheduledGame } from '../types'
 import { api } from '../api/client'
+import { uploadImage, BATTLE_IMAGE_MAX_BYTES, BATTLE_IMAGE_MAX_COUNT } from '../api/cloudinary'
 import Modal from './Modal'
 
 interface Props {
@@ -26,7 +27,7 @@ interface BattleForm {
   player2Report: string
   openPoints1: string
   openPoints2: string
-  images: string[]
+  imageUrls: string[]
 }
 
 const emptyForm = (): BattleForm => ({
@@ -42,7 +43,7 @@ const emptyForm = (): BattleForm => ({
   player2Report: '',
   openPoints1: '',
   openPoints2: '',
-  images: [],
+  imageUrls: [],
 })
 
 export default function Annals({ campaignId, battles, players, scoreboard, scheduledGames, onReload, toast }: Props) {
@@ -55,26 +56,38 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
     player1Report: '', player2Report: '', openPoints1: '', openPoints2: '',
   })
   const [showStandings, setShowStandings] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const set = (k: keyof BattleForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = ev => {
-        const b64 = ev.target?.result as string
-        setForm(f => ({ ...f, images: [...f.images, b64] }))
-      }
-      reader.readAsDataURL(file)
-    })
-    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (!files.length) return
+    if (form.imageUrls.length + files.length > BATTLE_IMAGE_MAX_COUNT) {
+      toast(`Maximum ${BATTLE_IMAGE_MAX_COUNT} images per battle`, 'err')
+      return
+    }
+    const oversized = files.find(f => f.size > BATTLE_IMAGE_MAX_BYTES)
+    if (oversized) {
+      toast('Each image must be under 5MB', 'err')
+      return
+    }
+    setUploadingImages(true)
+    try {
+      const urls = await Promise.all(files.map(uploadImage))
+      setForm(f => ({ ...f, imageUrls: [...f.imageUrls, ...urls] }))
+    } catch {
+      toast('Failed to upload image', 'err')
+    } finally {
+      setUploadingImages(false)
+      if (imageInputRef.current) imageInputRef.current.value = ''
+    }
   }
 
   const removeImage = (idx: number) =>
-    setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))
+    setForm(f => ({ ...f, imageUrls: f.imageUrls.filter((_, i) => i !== idx) }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,7 +107,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
         player2Report: form.player2Report || null,
         openPoints1: form.openPoints1 ? parseInt(form.openPoints1) : null,
         openPoints2: form.openPoints2 ? parseInt(form.openPoints2) : null,
-        images: form.images,
+        imageUrls: form.imageUrls,
       })
       setForm(emptyForm())
       setLinkedGameId('')
@@ -202,7 +215,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
             const isExpanded = expandedId === b.id
             const isEditing = editingId === b.id
             const hasReports = b.player1Report || b.player2Report
-            const hasImages = b.images && b.images.length > 0
+            const hasImages = b.imageUrls && b.imageUrls.length > 0
 
             return (
               <div key={b.id} className="battle-card">
@@ -298,8 +311,8 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
                       <>
                         {hasImages && (
                           <div className="battle-images">
-                            {b.images.map((img, i) => (
-                              <img key={i} src={img} alt={`Battle image ${i + 1}`} className="battle-image" />
+                            {b.imageUrls.map((url, i) => (
+                              <img key={i} src={url} alt={`Battle image ${i + 1}`} className="battle-image" />
                             ))}
                           </div>
                         )}
@@ -418,7 +431,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
           </div>
 
           <div className="form-group">
-            <label>Battle Images (optional)</label>
+            <label>Battle Images <span className="form-optional">(optional)</span></label>
             <input
               ref={imageInputRef}
               type="file"
@@ -426,12 +439,14 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
               multiple
               onChange={handleImageUpload}
               className="file-input"
+              disabled={uploadingImages}
             />
-            {form.images.length > 0 && (
+            {uploadingImages && <p className="form-hint">Uploading...</p>}
+            {form.imageUrls.length > 0 && (
               <div className="image-preview-row">
-                {form.images.map((img, i) => (
+                {form.imageUrls.map((url, i) => (
                   <div key={i} className="image-preview-item">
-                    <img src={img} alt={`Preview ${i + 1}`} className="image-preview-thumb" />
+                    <img src={url} alt={`Preview ${i + 1}`} className="image-preview-thumb" />
                     <button type="button" className="image-remove-btn" onClick={() => removeImage(i)}>×</button>
                   </div>
                 ))}

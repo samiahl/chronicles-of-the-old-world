@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api, setToken } from './api/client'
+import { uploadImage, AVATAR_MAX_BYTES } from './api/cloudinary'
 import type { Player, Battle, ArmyList, Narrative, ScoreboardEntry, User, Campaign, ScheduledGame, UserCampaignSummary, Challenge } from './types'
 import Annals from './components/Annals'
 import Modal from './components/Modal'
@@ -160,22 +161,22 @@ export default function App() {
     }
   }
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = async ev => {
-      const b64 = ev.target?.result as string
-      try {
-        const updated = await api.put<User>('/auth/me/avatar', { picture: b64 })
-        localStorage.setItem('auth_user', JSON.stringify(updated))
-        setAuthUser(updated)
-        toast('Avatar updated')
-      } catch {
-        toast('Failed to update avatar', 'err')
-      }
+    if (file.size > AVATAR_MAX_BYTES) {
+      toast('Avatar must be under 500KB', 'err')
+      return
     }
-    reader.readAsDataURL(file)
+    try {
+      const url = await uploadImage(file)
+      const updated = await api.put<User>('/auth/me/avatar', { picture: url })
+      localStorage.setItem('auth_user', JSON.stringify(updated))
+      setAuthUser(updated)
+      toast('Avatar updated')
+    } catch {
+      toast('Failed to update avatar', 'err')
+    }
   }
 
   const handleAdvancePhase = async () => {

@@ -39,7 +39,7 @@ data class AuthResponse(
 
 @Serializable
 data class UpdateAvatarRequest(
-    val picture: String,
+    val picture: String,  // Cloudinary URL
 )
 
 @Serializable
