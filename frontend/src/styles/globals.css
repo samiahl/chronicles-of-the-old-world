@@ -2241,6 +2241,19 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   text-transform: uppercase;
 }
 
+/* ── Profile pending campaign ───────────────────────────────────────────── */
+.profile-page-campaign-pending {
+  opacity: 0.75;
+}
+.profile-pending-badge {
+  color: var(--gold-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
 /* ── Inactive player badge ──────────────────────────────────────────────── */
 .player-inactive-badge {
   background: rgba(180, 80, 80, 0.15);

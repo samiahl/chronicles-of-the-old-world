@@ -83,10 +83,10 @@ export default function Players({ campaignId, players, armyLists, battles, authU
                 </div>
                 <div className="player-faction">{p.faction ?? 'Unknown faction'}</div>
                 <div className="player-date">Enlisted {fmtDate(p.createdAt)}</div>
+                {isCreator && !isFinished && !p.inactive && (
+                  <button className="btn-danger btn-sm" style={{ marginTop: '0.4rem' }} onClick={e => { e.stopPropagation(); handleDelete(p.id) }}>Remove</button>
+                )}
               </div>
-              {isCreator && !isFinished && !p.inactive && (
-                <button className="btn-danger" onClick={e => { e.stopPropagation(); handleDelete(p.id) }}>Remove</button>
-              )}
             </div>
           ))}
         </div>

@@ -19,6 +19,7 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
   const avatarRef = useRef<HTMLInputElement>(null)
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [pendingCampaigns, setPendingCampaigns] = useState<Campaign[]>([])
   const [loadingCampaigns, setLoadingCampaigns] = useState(true)
 
   // per-campaign expanded army lists: campaignId -> lists | null (loading)
@@ -26,7 +27,10 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
 
   useEffect(() => {
     api.get<Campaign[]>('/campaigns')
-      .then(setCampaigns)
+      .then(all => {
+        setCampaigns(all.filter(c => c.members.some(m => m.userId === authUser.id)))
+        setPendingCampaigns(all.filter(c => c.pendingRequests.some(r => r.userId === authUser.id)))
+      })
       .catch(() => toast('Failed to load campaigns', 'err'))
       .finally(() => setLoadingCampaigns(false))
   }, [])
@@ -174,10 +178,21 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
           <h2 className="profile-page-section-title">My Campaigns</h2>
           {loadingCampaigns ? (
             <p className="profile-empty">Loading…</p>
-          ) : campaigns.length === 0 ? (
+          ) : campaigns.length === 0 && pendingCampaigns.length === 0 ? (
             <p className="profile-empty">You are not part of any campaigns yet.</p>
           ) : (
             <div className="profile-page-campaigns">
+              {pendingCampaigns.map(c => (
+                <div key={c.id} className="profile-page-campaign-card profile-page-campaign-pending">
+                  <div className="profile-page-campaign-header">
+                    <div>
+                      <div className="profile-pending-badge">Request pending</div>
+                      <div className="profile-page-campaign-name">{c.name}</div>
+                      {c.theme && <div className="profile-page-campaign-theme">{c.theme}</div>}
+                    </div>
+                  </div>
+                </div>
+              ))}
               {campaigns.map(c => {
                 const isExpanded = expandedLists[c.id] !== undefined
                 const lists = expandedLists[c.id]

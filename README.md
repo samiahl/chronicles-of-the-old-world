@@ -1,144 +1,203 @@
 # ⚔ Chronicles of Blood and Glory
 ### The Old World Campaign Manager
 
-A local narrative campaign manager for Warhammer tabletop miniature wargames.
-Track battles, write the story of your campaign, manage army lists, and keep
-a scoreboard — all from a browser running on your own machine.
+A narrative campaign manager for Warhammer: The Old World tabletop miniature wargames.
+Track battles, write the story of your campaign, manage army lists, schedule games,
+issue challenges, and keep standings — all from the browser.
 
 ---
 
-## Requirements
+## Live deployment
 
-| Tool | Version | Install |
-|------|---------|---------|
-| Docker | any recent | https://docs.docker.com/get-docker/ |
-| Java (JDK) | 21 | `brew install openjdk@21` |
-| Node.js | 18+ | https://nodejs.org |
+| Service | Role | URL |
+|---------|------|-----|
+| **Vercel** | Frontend (React SPA) | https://chronicles-of-the-old-world.vercel.app |
+| **Render** | Backend (Kotlin/Ktor API) | https://chronicles-of-the-old-world.onrender.com |
+| **MongoDB Atlas** | Database (M0 free tier) | Managed cloud cluster |
 
-> Gradle does **not** need to be installed globally — the project includes a
-> Gradle wrapper (`./gradlew`) that downloads the right version automatically.
+> **Cold starts** — Render's free tier spins down after 15 minutes of inactivity.
+> The first request after a period of quiet may take 30–50 seconds while the
+> backend wakes up. Subsequent requests are instant.
 
 ---
 
-## First-time setup
+## Architecture
+
+```
+Browser
+  │
+  ├── Static assets served by Vercel CDN
+  │
+  └── API calls  →  /api/*  →  Vercel rewrite proxy
+                                    │
+                                    └──► Render (Ktor, port 8080)
+                                              │
+                                              └──► MongoDB Atlas (cloud)
+```
+
+`frontend/vercel.json` rewrites every `/api/*` request to the Render backend,
+so the frontend never talks to Render directly in production — it always goes
+through the same origin.
+
+---
+
+## Hosting setup
+
+### MongoDB Atlas
+
+1. Create a free account at https://cloud.mongodb.com
+2. Build a free **M0** cluster (512 MB, shared)
+3. Create a database user with **Read and Write** access
+4. Under **Network Access**, allow `0.0.0.0/0` (required for Render)
+5. Get the connection string: **Connect → Drivers → Node.js** and copy the URI
+   - Replace `<password>` with your actual password
+   - Add the database name before the query string:
+     `mongodb+srv://user:pass@cluster.mongodb.net/warhammer_campaign?retryWrites=true&w=majority`
+
+### Render
+
+1. Create a free account at https://render.com
+2. **New → Web Service** → connect your GitHub repo
+3. Settings:
+   - **Name**: `chronicles-of-the-old-world`
+   - **Language**: Docker
+   - **Branch**: `main`
+   - **Root directory**: `backend`
+   - **Region**: EU Central (or closest to your users)
+   - **Instance type**: Free
+4. Under **Environment Variables**, add:
+   - `MONGODB_URI` — your Atlas connection string (with password and DB name)
+   - `JWT_SECRET` — any long random string (e.g. output of `openssl rand -hex 32`)
+5. Deploy. Render builds the Docker image and starts the service.
+
+### Vercel
+
+1. Create a free account at https://vercel.com
+2. **Add New Project** → import your GitHub repo
+3. Settings:
+   - **Root directory**: `frontend`
+   - **Framework preset**: Vite
+4. No environment variables needed — the Render URL is baked into `vercel.json`
+5. Deploy. Subsequent pushes to `main` auto-deploy both services.
+
+---
+
+## Local development
+
+### Requirements
+
+| Tool | Version |
+|------|---------|
+| Docker | any recent |
+| Java (JDK) | 17+ |
+| Node.js | 18+ |
+
+> Gradle does **not** need to be installed globally — the project uses a wrapper
+> (`./gradlew`) that downloads the correct version automatically.
+
+### First-time setup
 
 ```bash
-# Install frontend dependencies (only needed once)
 cd frontend
 npm install
 cd ..
 ```
 
----
+### Running locally
 
-## Starting the app
-
-You need three things running: the database, the backend, and the frontend.
 Open three terminal windows.
 
-**Terminal 1 — Database (MongoDB)**
+**Terminal 1 — Database**
 ```bash
-cd /path/to/root
 docker-compose up -d
 ```
 
-**Terminal 2 — Backend (Kotlin/Ktor API)**
+**Terminal 2 — Backend**
 ```bash
-cd /path/to/root/backend
+cd backend
 ./gradlew run
 ```
-> The first run downloads dependencies and may take a minute or two.
-> You'll see `Application started` when it's ready.
+> First run downloads dependencies — may take a minute. Ready when you see `Application started`.
 
-**Terminal 3 — Frontend (React)**
+**Terminal 3 — Frontend**
 ```bash
-cd /path/to/root/frontend
+cd frontend
 npm run dev
 ```
 
-Then open **http://localhost:5173** in your browser.
+Open **http://localhost:5173**.
 
----
+The local frontend talks directly to `http://localhost:8080` (configured in
+`src/api/client.ts` via Vite's dev proxy).
 
-## Using the app
+### Running backend tests
 
-### Players
-Go to the **Players** tab to enlist everyone taking part in the campaign.
-Enter a commander name and their faction (e.g. Empire, Chaos, Orcs & Goblins).
-Players must be added before battles can be logged.
+```bash
+cd backend
+./gradlew test
+```
 
-### Logging a battle
-Go to the **Battle Reports** tab and click **+ Log Battle**.
+Tests use an embedded MongoDB instance (Flapdoodle) — no running database needed.
 
-Fill in:
-- **Date** of the game
-- **Scenario** (optional — e.g. "Watchtower", "Blood and Glory")
-- **Points size** (optional — e.g. 2000)
-- **Player 1** and **Player 2** from the dropdowns
-- **Result** — who won, or if it was a draw
-- **Victory Points** scored by each side (optional)
-- **Battle Reports** — each player can write their own narrative account of
-  the battle from their faction's perspective
+### Stopping
 
-### The Chronicle
-Go to the **The Chronicle** tab to build the campaign's storyline.
-Click **+ Add Entry** to write a narrative piece — this can be a GM/campaign
-master summary, a piece of in-world fiction, or any other story beat.
-
-Each entry can optionally be **linked to a specific battle**, which will show
-a reference badge on the entry.
-
-### Army Lists
-Go to the **Army Lists** tab and click **+ Submit List** to file a muster roll.
-Paste in your full army list. Lists are tied to a player and can have a name
-(e.g. "Round 1 List") and points value.
-
-Click **▸ View List** on any card to expand and read the full list.
-
-### Scoreboard
-The **Scoreboard** tab updates automatically as battles are logged.
-
-| Column | Meaning |
-|--------|---------|
-| Points | Campaign points (Win=3, Draw=1, Loss=0) |
-| GP | Games played |
-| W / D / L | Wins, Draws, Losses |
-| VP+ / VP− | Victory points scored for and against |
-
-> Scoring rules are provisional and will be updated as the campaign defines them.
-
----
-
-## Stopping the app
-
-Kill the backend and frontend terminals with `Ctrl+C`, then stop MongoDB:
-
+Kill backend and frontend with `Ctrl+C`, then:
 ```bash
 docker-compose down
 ```
 
-Your data is stored in a Docker volume and will persist between sessions.
+Data is stored in a Docker volume and persists between sessions.
+
+---
+
+## Features
+
+| Tab | Description |
+|-----|-------------|
+| **Battle Reports** | Log games — players, result, VPs, scenario, images, narrative reports |
+| **The Chronicle** | Campaign master entries: story beats, linked to specific battles |
+| **Army Lists** | File muster rolls with faction, points, full list text, characters and units |
+| **Players** | Enlist commanders, manage join requests, view player profiles |
+| **Calendar** | Schedule upcoming games by date |
+| **Challenge Board** | Issue and respond to personal challenges between commanders |
+
+### Campaign types
+
+- **Standard** — open play, with optional league or tournament sub-type
+- **Path of Glory** — milestone-based progression with phase advancement
+- **Battle March** — fixed points limit throughout
+
+### Campaign lifecycle
+
+Campaigns can be **finished** by the campaign master, making them fully read-only
+(history preserved, no new data can be added). The master can **re-open** a
+finished campaign at any time. Campaigns can also be **deleted**, which permanently
+removes all associated data.
 
 ---
 
 ## Project layout
 
 ```
-omat/
-├── docker-compose.yml      ← MongoDB container definition
-├── backend/                ← Kotlin + Ktor REST API (port 8080)
-│   ├── gradlew             ← Gradle wrapper (no global Gradle needed)
+blood-and-glory/
+├── backend/                        ← Kotlin + Ktor REST API
+│   ├── Dockerfile                  ← used by Render
 │   ├── build.gradle.kts
-│   └── src/main/kotlin/com/campaign/
-│       ├── Application.kt
-│       ├── DatabaseFactory.kt
-│       ├── model/          ← data classes
-│       └── routes/         ← one file per resource
-└── frontend/               ← React + TypeScript SPA (port 5173)
-    ├── package.json
-    └── src/
-        ├── App.tsx
-        ├── api/            ← HTTP client
-        ├── components/     ← one component per section
-        └── styles/         ← global CSS (gothic dark theme)
+│   └── src/
+│       ├── main/kotlin/com/campaign/
+│       │   ├── Application.kt
+│       │   ├── DatabaseFactory.kt
+│       │   ├── model/              ← data classes
+│       │   └── routes/             ← one file per resource
+│       └── test/kotlin/com/campaign/
+│           └── AppTest.kt          ← integration tests (embedded MongoDB)
+├── frontend/                       ← React + TypeScript SPA (Vite)
+│   ├── vercel.json                 ← Vercel rewrite config + SPA fallback
+│   ├── package.json
+│   └── src/
+│       ├── App.tsx
+│       ├── api/                    ← HTTP client + Cloudinary upload
+│       ├── components/             ← one component per section
+│       └── styles/                 ← global CSS (gothic dark theme)
+└── sessions/                       ← development session notes
 ```
