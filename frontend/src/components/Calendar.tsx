@@ -60,7 +60,7 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
         notes: form.notes || null,
         createdBy: authUser.id,
       })
-      setForm(emptyForm)
+      setForm(emptyForm())
       setShowModal(false)
       await onReload()
       toast('Game scheduled')

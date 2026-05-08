@@ -180,7 +180,7 @@ export default function App() {
 
   const handleAdvancePhase = async () => {
     try {
-      const updated = await api.post<Campaign>(`/campaigns/${currentCampaign!.id}/advance-phase`)
+      const updated = await api.post<Campaign>(`/campaigns/${currentCampaign!.id}/advance-phase`, {})
       setCurrentCampaign(updated)
       toast('Campaign advanced to next phase')
     } catch {

@@ -8,6 +8,9 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
+# IDE
+.idea/
+
 # Misc
 .DS_Store
 *.env
