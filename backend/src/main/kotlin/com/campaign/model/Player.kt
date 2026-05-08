@@ -10,6 +10,7 @@ data class Player(
     val campaignId: String? = null,
     val userId: String? = null,
     val createdAt: String,
+    val inactive: Boolean = false,
 )
 
 @Serializable

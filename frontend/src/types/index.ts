@@ -48,6 +48,7 @@ export interface Player {
   campaignId: string | null
   userId: string | null
   createdAt: string
+  inactive: boolean
 }
 
 export interface Battle {
@@ -103,6 +104,7 @@ export interface ArmyList {
   playerName: string
   playerFaction: string | null
   name: string
+  faction: string | null
   content: string | null
   gameSize: number | null
   createdAt: string

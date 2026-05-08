@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.campaign.model.*
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -21,6 +22,8 @@ import java.util.*
 
 fun Route.authRoutes(db: MongoDatabase, jwtSecret: String, jwtIssuer: String, jwtAudience: String) {
     val users = db.getCollection<Document>("users")
+    val players = db.getCollection<Document>("players")
+    val campaigns = db.getCollection<Document>("campaigns")
 
     route("/auth") {
         post("/register") {
@@ -102,6 +105,18 @@ fun Route.authRoutes(db: MongoDatabase, jwtSecret: String, jwtIssuer: String, jw
                 val newUsername = userDoc.getString("username") ?: ""
                 val token = makeToken(userId, newUsername, jwtSecret, jwtIssuer, jwtAudience)
                 call.respond(AuthResponse(token = token, user = userDoc.toUserPublic()))
+            }
+
+            delete("/me") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                users.deleteOne(Filters.eq("_id", ObjectId(userId)))
+                players.updateMany(Filters.eq("userId", userId), Updates.set("inactive", true))
+                campaigns.updateMany(
+                    Filters.eq("members.userId", userId),
+                    Updates.pull("members", Document("userId", userId))
+                )
+                call.respond(HttpStatusCode.NoContent)
             }
 
             put("/me/avatar") {

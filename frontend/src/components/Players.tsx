@@ -23,6 +23,7 @@ export default function Players({ campaignId, players, armyLists, battles, authU
   const [profilePlayer, setProfilePlayer] = useState<Player | null>(null)
 
   const isCreator = currentCampaign.createdBy === authUser.id
+  const isFinished = currentCampaign.status === 'finished'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +52,7 @@ export default function Players({ campaignId, players, armyLists, battles, authU
 
   return (
     <div>
-      {isCreator && (
+      {isCreator && !isFinished && (
         <CampaignJoinRequests campaignId={campaignId} onApproved={onReload} />
       )}
 
@@ -60,7 +61,7 @@ export default function Players({ campaignId, players, armyLists, battles, authU
           <h2 className="section-title">Campaign Participants</h2>
           <p className="section-desc">The commanders who vie for dominion</p>
         </div>
-        {isCreator && (
+        {isCreator && !isFinished && (
           <button className="btn-primary" onClick={() => setShowModal(true)}>+ Enlist</button>
         )}
       </div>
@@ -76,11 +77,14 @@ export default function Players({ campaignId, players, armyLists, battles, authU
             <div key={p.id} className="player-card" onClick={() => setProfilePlayer(p)} style={{ cursor: 'pointer' }}>
               <div className="player-card-avatar">{p.name.charAt(0).toUpperCase()}</div>
               <div className="player-card-info">
-                <div className="player-name">{p.name}</div>
+                <div className="player-name">
+                  {p.name}
+                  {p.inactive && <span className="player-inactive-badge">Inactive</span>}
+                </div>
                 <div className="player-faction">{p.faction ?? 'Unknown faction'}</div>
                 <div className="player-date">Enlisted {fmtDate(p.createdAt)}</div>
               </div>
-              {isCreator && (
+              {isCreator && !isFinished && !p.inactive && (
                 <button className="btn-danger" onClick={e => { e.stopPropagation(); handleDelete(p.id) }}>Remove</button>
               )}
             </div>

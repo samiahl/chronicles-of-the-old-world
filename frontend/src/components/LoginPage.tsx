@@ -78,8 +78,10 @@ export default function LoginPage({ onLogin }: Props) {
               onChange={e => setUsername(e.target.value)}
               placeholder="Enter your username…"
               autoComplete="username"
+              maxLength={30}
               required
             />
+            {mode === 'register' && <p className="form-hint">1–30 characters</p>}
           </div>
           <div className="form-group">
             <label>Password</label>

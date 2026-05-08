@@ -34,6 +34,7 @@ data class ArmyList(
     val playerName: String,
     val playerFaction: String? = null,
     val name: String,
+    val faction: String? = null,
     val content: String? = null,
     val gameSize: Int? = null,
     val createdAt: String,
@@ -45,6 +46,7 @@ data class ArmyList(
 data class CreateArmyListRequest(
     val playerId: String,
     val name: String,
+    val faction: String? = null,
     val content: String? = null,
     val gameSize: Int? = null,
 )
@@ -52,6 +54,7 @@ data class CreateArmyListRequest(
 @Serializable
 data class UpdateArmyListRequest(
     val name: String? = null,
+    val faction: String? = null,
     val content: String? = null,
     val gameSize: Int? = null,
     val characters: List<Character>? = null,

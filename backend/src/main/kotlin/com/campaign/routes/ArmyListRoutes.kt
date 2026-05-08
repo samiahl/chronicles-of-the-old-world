@@ -39,6 +39,7 @@ fun Route.armyListRoutes(db: MongoDatabase) {
                 .append("campaignId", campaignId)
                 .append("playerId", req.playerId)
                 .append("name", req.name)
+                .append("faction", req.faction)
                 .append("content", req.content)
                 .append("gameSize", req.gameSize)
                 .append("createdAt", Instant.now().toString())
@@ -54,6 +55,7 @@ fun Route.armyListRoutes(db: MongoDatabase) {
             val req = call.receive<UpdateArmyListRequest>()
             val updates = Document()
             req.name?.let { updates.append("name", it) }
+            req.faction?.let { updates.append("faction", it) }
             req.content?.let { updates.append("content", it) }
             req.gameSize?.let { updates.append("gameSize", it) }
             req.characters?.let { updates.append("characters", it.map { c -> c.toDocument() }) }
@@ -95,6 +97,7 @@ fun Document.toArmyList(playerMap: Map<String, Document>): ArmyList {
         playerName = player?.getString("name") ?: "Unknown",
         playerFaction = player?.getString("faction"),
         name = getString("name") ?: "",
+        faction = getString("faction"),
         content = getString("content"),
         gameSize = getInteger("gameSize"),
         createdAt = getString("createdAt") ?: Instant.now().toString(),

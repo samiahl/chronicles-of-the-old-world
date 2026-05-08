@@ -10,6 +10,7 @@ interface Props {
   players: Player[]
   scoreboard: ScoreboardEntry[]
   scheduledGames: ScheduledGame[]
+  readOnly?: boolean
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
@@ -46,7 +47,7 @@ const emptyForm = (): BattleForm => ({
   imageUrls: [],
 })
 
-export default function Annals({ campaignId, battles, players, scoreboard, scheduledGames, onReload, toast }: Props) {
+export default function Annals({ campaignId, battles, players, scoreboard, scheduledGames, readOnly, onReload, toast }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<BattleForm>(emptyForm)
   const [linkedGameId, setLinkedGameId] = useState('')
@@ -156,7 +157,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
           <button className="btn-secondary" onClick={() => setShowStandings(!showStandings)}>
             {showStandings ? 'Hide Standings' : 'Show Standings'}
           </button>
-          <button className="btn-primary" onClick={() => { setForm(emptyForm()); setLinkedGameId(''); setShowModal(true) }}>+ Log Battle</button>
+          {!readOnly && <button className="btn-primary" onClick={() => { setForm(emptyForm()); setLinkedGameId(''); setShowModal(true) }}>+ Log Battle</button>}
         </div>
       </div>
 
@@ -227,7 +228,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span className="battle-num">Battle #{b.id.slice(-4)}</span>
-                    <button className="btn-secondary btn-sm" onClick={() => startEdit(b)}>Edit</button>
+                    {!readOnly && <button className="btn-secondary btn-sm" onClick={() => startEdit(b)}>Edit</button>}
                   </div>
                 </div>
 

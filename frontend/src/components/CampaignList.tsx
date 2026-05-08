@@ -84,12 +84,10 @@ export default function CampaignList({ authUser, onSelect }: Props) {
     return null
   }
 
-  const myCampaigns = campaigns.filter(c =>
-    c.members.some(m => m.userId === authUser.id)
-  )
-  const otherCampaigns = campaigns.filter(c =>
-    !c.members.some(m => m.userId === authUser.id)
-  )
+  const activeCampaigns = campaigns.filter(c => c.status !== 'finished')
+  const myCampaigns = activeCampaigns.filter(c => c.members.some(m => m.userId === authUser.id))
+  const otherCampaigns = activeCampaigns.filter(c => !c.members.some(m => m.userId === authUser.id))
+  const finishedCampaigns = campaigns.filter(c => c.status === 'finished')
 
   return (
     <div className="campaign-list-page">
@@ -255,6 +253,8 @@ export default function CampaignList({ authUser, onSelect }: Props) {
                         </div>
                         {hasPending ? (
                           <div className="campaign-pending-badge">Request Pending…</div>
+                        ) : c.status === 'finished' ? (
+                          <div className="campaign-pending-badge">Campaign Finished</div>
                         ) : js?.show ? (
                           <div className="campaign-join-form">
                             <input
@@ -288,6 +288,27 @@ export default function CampaignList({ authUser, onSelect }: Props) {
                       </div>
                     )
                   })}
+                </div>
+              </section>
+            )}
+
+            {finishedCampaigns.length > 0 && (
+              <section className="campaign-section">
+                <h3 className="campaign-section-title campaign-section-title-finished">Finished Campaigns</h3>
+                <div className="campaign-cards">
+                  {finishedCampaigns.map(c => (
+                    <div key={c.id} className="campaign-card campaign-card-finished" onClick={() => onSelect(c)}>
+                      <div className="campaign-finished-badge">Finished</div>
+                      <div className="campaign-card-name">{c.name}</div>
+                      {typeBadge(c)}
+                      {c.theme && <div className="campaign-card-theme">{c.theme}</div>}
+                      {c.description && <div className="campaign-card-desc">{c.description}</div>}
+                      <div className="campaign-card-meta">
+                        {c.members.length} member{c.members.length !== 1 ? 's' : ''} · by {c.createdByName}
+                      </div>
+                      <div className="campaign-card-enter">View Campaign →</div>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}

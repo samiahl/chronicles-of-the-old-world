@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Player, ArmyList, Battle, UserCampaignSummary } from '../types'
 import { api } from '../api/client'
+import ArmyListPanel from './ArmyListPanel'
 
 interface Props {
   player: Player
@@ -12,6 +13,7 @@ interface Props {
 export default function PlayerProfile({ player, armyLists, battles, onClose }: Props) {
   const [campaigns, setCampaigns] = useState<UserCampaignSummary[] | null>(null)
   const [campaignsErr, setCampaignsErr] = useState(false)
+  const [selectedList, setSelectedList] = useState<ArmyList | null>(null)
 
   useEffect(() => {
     if (!player.userId) { setCampaigns([]); return }
@@ -29,6 +31,16 @@ export default function PlayerProfile({ player, armyLists, battles, onClose }: P
   const draws  = myBattles.filter(b => b.result === 'draw').length
 
   const initial = player.name.charAt(0).toUpperCase()
+
+  if (selectedList) {
+    return (
+      <ArmyListPanel
+        armyList={selectedList}
+        onClose={onClose}
+        onBack={() => setSelectedList(null)}
+      />
+    )
+  }
 
   return (
     <div className="profile-overlay" onClick={onClose}>
@@ -86,8 +98,8 @@ export default function PlayerProfile({ player, armyLists, battles, onClose }: P
             ) : (
               <div className="profile-list-rows">
                 {myLists.map(a => (
-                  <div key={a.id} className="profile-list-row">
-                    <span className="profile-list-name">{a.name}</span>
+                  <div key={a.id} className="profile-list-row clickable" onClick={() => setSelectedList(a)}>
+                    <span className="profile-list-name">{a.name}{a.faction ? ` · ${a.faction}` : ''}</span>
                     {a.gameSize != null && <span className="profile-list-pts">{a.gameSize}pts</span>}
                   </div>
                 ))}

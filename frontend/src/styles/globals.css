@@ -474,6 +474,7 @@ main {
 }
 .army-list-name { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); font-weight: 600; }
 .army-player { color: var(--text-sec); font-style: italic; font-size: 0.85rem; margin-top: 0.15rem; }
+.army-faction { color: var(--gold-dim); font-size: 0.8rem; margin-top: 0.1rem; }
 .army-pts { font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--gold-dim); }
 
 .army-toggle {
@@ -764,6 +765,25 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Campaign List ──────────────────────────────────────────────────────── */
 .campaign-list-page { min-height: 100vh; }
+
+/* ── User Profile Page ──────────────────────────────────────────────────── */
+.profile-page-body { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 2.5rem; }
+.profile-page-section {}
+.profile-page-section-title { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold-light); margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--gold-border); }
+.profile-page-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; }
+.profile-page-avatar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.profile-page-avatar-img { border-radius: 50%; height: 64px; width: 64px; object-fit: cover; border: 2px solid var(--gold-border); }
+.profile-page-avatar-placeholder { align-items: center; background: linear-gradient(135deg, var(--gold-dim), #3a2808); border: 2px solid var(--gold-border); border-radius: 50%; color: var(--gold-light); display: flex; flex-shrink: 0; font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; height: 64px; justify-content: center; width: 64px; }
+.profile-page-username { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--text); margin-bottom: 0.3rem; }
+.profile-page-form {}
+.profile-page-campaigns { display: flex; flex-direction: column; gap: 0.75rem; }
+.profile-page-campaign-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.profile-page-campaign-header { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; }
+.profile-page-campaign-name { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--text); }
+.profile-page-campaign-theme { color: var(--text-muted); font-size: 0.78rem; font-style: italic; margin-top: 0.15rem; }
+.profile-page-lists { border-top: 1px solid var(--border); padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.profile-page-list-row { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem; border-radius: 2px; background: var(--bg-dark); }
+.profile-page-list-faction { color: var(--text-muted); font-size: 0.82rem; font-style: italic; }
 .campaign-list-content {
   max-width: 900px;
   margin: 0 auto;
@@ -1752,7 +1772,8 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   justify-content: center;
   width: 42px;
 }
-.player-card-info { flex: 1; }
+.player-card-info { flex: 1; min-width: 0; }
+.player-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Player Profile ─────────────────────────────────────────────────────── */
 .profile-overlay {
@@ -1902,6 +1923,25 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 }
 .profile-list-name { color: var(--text); font-size: 0.9rem; }
 .profile-list-pts  { color: var(--text-muted); font-size: 0.8rem; }
+.profile-list-row.clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.profile-list-row.clickable:hover { border-color: var(--gold-border); background: var(--bg-hover, #1e1a12); }
+
+/* ── Army List Panel ────────────────────────────────────────────────────── */
+.armypanel-chars { display: flex; flex-direction: column; gap: 0.75rem; }
+.armypanel-char-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; }
+.armypanel-char-header { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.armypanel-char-name { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); font-weight: 600; }
+.armypanel-char-rank { color: var(--text-sec); font-size: 0.8rem; font-style: italic; }
+.armypanel-char-stats { display: flex; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; }
+.armypanel-stat { font-size: 0.78rem; color: var(--text-muted); }
+.armypanel-char-notes { font-size: 0.82rem; color: var(--text-sec); margin-top: 0.3rem; }
+.armypanel-char-items { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.armypanel-item-tag { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 2px; color: var(--text-sec); font-size: 0.75rem; padding: 0.15rem 0.5rem; }
+.armypanel-heroic-tag { border-color: var(--gold-border); color: var(--gold-light); }
+.armypanel-units { display: flex; flex-direction: column; gap: 0.35rem; }
+.armypanel-unit-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+.armypanel-unit-row:last-child { border-bottom: none; }
+.armypanel-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; color: var(--text-sec); font-family: monospace; font-size: 0.78rem; line-height: 1.6; overflow-x: auto; padding: 0.75rem; white-space: pre-wrap; }
 
 /* Campaign rows */
 .profile-campaign-rows { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -2164,4 +2204,75 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   font-size: 0.82rem;
   font-style: italic;
   margin-top: -0.2rem;
+}
+
+/* ── Finished campaign ──────────────────────────────────────────────────── */
+.campaign-finished-banner {
+  background: rgba(100, 80, 30, 0.25);
+  border: 1px solid var(--gold-border);
+  border-radius: 2px;
+  color: var(--gold-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  margin: 0.25rem auto 0;
+  padding: 0.25rem 0.75rem;
+  text-align: center;
+  text-transform: uppercase;
+  width: fit-content;
+}
+.campaign-card-finished {
+  opacity: 0.75;
+}
+.campaign-section-title-finished {
+  color: var(--text-muted) !important;
+}
+.campaign-finished-badge {
+  background: rgba(100, 80, 30, 0.25);
+  border: 1px solid var(--gold-border);
+  border-radius: 2px;
+  color: var(--gold-dim);
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  text-transform: uppercase;
+}
+
+/* ── Inactive player badge ──────────────────────────────────────────────── */
+.player-inactive-badge {
+  background: rgba(180, 80, 80, 0.15);
+  border: 1px solid rgba(180, 80, 80, 0.35);
+  border-radius: 2px;
+  color: #c07070;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.35rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ── Profile page danger zone ───────────────────────────────────────────── */
+.profile-danger-title { color: #c07070 !important; }
+.profile-danger-card { border-color: rgba(180, 80, 80, 0.35) !important; }
+.profile-danger-row {
+  align-items: center;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+}
+.profile-danger-label {
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+.profile-danger-desc {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  max-width: 480px;
 }

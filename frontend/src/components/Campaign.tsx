@@ -7,11 +7,12 @@ interface Props {
   campaignId: string
   narratives: Narrative[]
   battles: Battle[]
+  readOnly?: boolean
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
 
-export default function Campaign({ campaignId, narratives, battles, onReload, toast }: Props) {
+export default function Campaign({ campaignId, narratives, battles, readOnly, onReload, toast }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -54,7 +55,7 @@ export default function Campaign({ campaignId, narratives, battles, onReload, to
           <h2 className="section-title">Chronicles of Blood and Glory</h2>
           <p className="section-desc">The unfolding saga of the campaign</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Entry</button>
+        {!readOnly && <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Entry</button>}
       </div>
 
       {narratives.length === 0 ? (
@@ -78,9 +79,11 @@ export default function Campaign({ campaignId, narratives, battles, onReload, to
                 <div className="narrative-battle-badge">⚔ Battle #{n.battleId.slice(-4)}</div>
               )}
               <div className="narrative-content">{n.content}</div>
-              <div className="narrative-actions">
-                <button className="btn-danger" onClick={() => handleDelete(n.id)}>Remove</button>
-              </div>
+              {!readOnly && (
+                <div className="narrative-actions">
+                  <button className="btn-danger" onClick={() => handleDelete(n.id)}>Remove</button>
+                </div>
+              )}
             </div>
           ))}
         </div>

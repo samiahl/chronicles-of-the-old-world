@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ArmyList, ArmyUnit, Character, Player } from '../types'
+import type { ArmyList, ArmyUnit, Campaign, Character, Player, User } from '../types'
 import { api } from '../api/client'
 import Modal from './Modal'
 
@@ -7,9 +7,32 @@ interface Props {
   campaignId: string
   armyLists: ArmyList[]
   players: Player[]
+  authUser: User
+  currentCampaign: Campaign
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
+
+const FACTIONS = [
+  'Beastmen Brayherds',
+  'Chaos Dwarfs',
+  'Daemons of Chaos',
+  'Dark Elves',
+  'Dwarfen Mountain Holds',
+  'Empire of Man',
+  'Grand Cathay',
+  'High Elf Realms',
+  'Kingdom of Bretonnia',
+  'Lizardmen',
+  'Ogre Kingdoms',
+  'Orc & Goblin Tribes',
+  'Renegade Crowns',
+  'Skaven',
+  'Tomb Kings of Khemri',
+  'Vampire Counts',
+  'Warriors of Chaos',
+  'Wood Elf Realms',
+]
 
 function blankChar() {
   return { name: '', rank: '', xp: '', isCaster: false, modifiers: '', notes: '', magicalItems: '' }
@@ -18,11 +41,25 @@ function blankUnit() {
   return { name: '', notes: '', xp: '' }
 }
 
-export default function ArmyLists({ campaignId, armyLists, players, onReload, toast }: Props) {
+export default function ArmyLists({ campaignId, armyLists, players, authUser, currentCampaign, onReload, toast }: Props) {
+  const myPlayer = players.find(p => p.userId === authUser.id)
+  const isCreator = currentCampaign.createdBy === authUser.id
+  const isFinished = currentCampaign.status === 'finished'
+
+  const phases: { label: string; points: number }[] = [
+    ...(currentCampaign.startingPoints != null
+      ? [{ label: `Starting Phase — ${currentCampaign.startingPoints}pts`, points: currentCampaign.startingPoints }]
+      : []),
+    ...currentCampaign.milestones.map((m, i) => ({
+      label: `Phase ${i + 1}: ${m.name} — ${m.points}pts`,
+      points: m.points,
+    })),
+  ]
   // existing list state
   const [showModal, setShowModal] = useState(false)
   const [playerId, setPlayerId] = useState('')
   const [name, setName] = useState('')
+  const [faction, setFaction] = useState('')
   const [content, setContent] = useState('')
   const [gameSize, setGameSize] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -62,16 +99,26 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
 
   // ── existing handlers ────────────────────────────────────────────────────
 
+  const openSubmitModal = () => {
+    if (myPlayer) setPlayerId(myPlayer.id)
+    const currentPoints = currentCampaign.currentPhase === 0
+      ? currentCampaign.startingPoints
+      : currentCampaign.milestones[currentCampaign.currentPhase - 1]?.points ?? null
+    if (currentPoints != null) setGameSize(String(currentPoints))
+    setShowModal(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       await api.post(`/campaigns/${campaignId}/army-lists`, {
         playerId,
         name,
+        faction: faction || null,
         content: content || null,
         gameSize: gameSize ? parseInt(gameSize) : null,
       })
-      setPlayerId(''); setName(''); setContent(''); setGameSize('')
+      setPlayerId(''); setName(''); setFaction(''); setContent(''); setGameSize('')
       setShowModal(false)
       await onReload()
       toast('Muster roll filed')
@@ -300,10 +347,12 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
           <h2 className="section-title">Army Muster Rolls</h2>
           <p className="section-desc">The forces marshalled for war</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-secondary" onClick={() => setShowImportModal(true)}>↓ Import OWB</button>
-          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Submit List</button>
-        </div>
+        {!isFinished && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn-secondary" onClick={() => setShowImportModal(true)}>↓ Import OWB</button>
+            <button className="btn-primary" onClick={openSubmitModal}>+ Submit List</button>
+          </div>
+        )}
       </div>
 
       {armyLists.length === 0 ? (
@@ -347,6 +396,7 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                       <div>
                         <div className="army-list-name">{a.name}</div>
                         <div className="army-player">{a.playerName}{a.playerFaction ? ` · ${a.playerFaction}` : ''}</div>
+                        {a.faction && <div className="army-faction">{a.faction}</div>}
                       </div>
                       <div className="army-pts">{a.gameSize ? `${a.gameSize}pts` : ''}</div>
                     </div>
@@ -544,13 +594,15 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                                       </button>
                                     )}
 
-                                    <div className="char-actions">
-                                      <button
-                                        className="btn-secondary btn-sm"
-                                        onClick={() => setEditingChar({ listId: a.id, char: { ...c } })}
-                                      >Edit</button>
-                                      <button className="btn-danger" onClick={() => handleRemoveChar(a.id, c.id)}>Remove</button>
-                                    </div>
+                                    {!isFinished && (
+                                      <div className="char-actions">
+                                        <button
+                                          className="btn-secondary btn-sm"
+                                          onClick={() => setEditingChar({ listId: a.id, char: { ...c } })}
+                                        >Edit</button>
+                                        <button className="btn-danger" onClick={() => handleRemoveChar(a.id, c.id)}>Remove</button>
+                                      </div>
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -634,14 +686,14 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                               >Add Character</button>
                             </div>
                           </div>
-                        ) : (
+                        ) : !isFinished ? (
                           <button
                             className="char-add-btn"
                             onClick={() => { setAddingCharTo(a.id); setNewChar(blankChar()) }}
                           >
                             + Add Character
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     )}
 
@@ -695,13 +747,15 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                                       {u.xp != null && <span className="xp-badge">{u.xp} XP</span>}
                                       {u.notes && <span className="unit-notes"> — {u.notes}</span>}
                                     </div>
-                                    <div className="unit-actions">
-                                      <button
-                                        className="btn-secondary btn-sm"
-                                        onClick={() => setEditingUnit({ listId: a.id, unit: { ...u } })}
-                                      >Edit</button>
-                                      <button className="btn-danger" onClick={() => handleRemoveUnit(a.id, u.id)}>Remove</button>
-                                    </div>
+                                    {!isFinished && (
+                                      <div className="unit-actions">
+                                        <button
+                                          className="btn-secondary btn-sm"
+                                          onClick={() => setEditingUnit({ listId: a.id, unit: { ...u } })}
+                                        >Edit</button>
+                                        <button className="btn-danger" onClick={() => handleRemoveUnit(a.id, u.id)}>Remove</button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -740,21 +794,23 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
                               >Add</button>
                             </div>
                           </div>
-                        ) : (
+                        ) : !isFinished ? (
                           <button
                             className="char-add-btn"
                             onClick={() => { setAddingUnitTo(a.id); setNewUnit(blankUnit()) }}
                           >
                             + Add Unit
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     )}
 
-                    <div className="army-card-footer">
-                      <button className="btn-secondary" onClick={() => startEdit(a)}>Edit</button>
-                      <button className="btn-danger" onClick={() => handleDelete(a.id)}>Remove</button>
-                    </div>
+                    {!isFinished && (a.playerId === myPlayer?.id || isCreator) && (
+                      <div className="army-card-footer">
+                        <button className="btn-secondary" onClick={() => startEdit(a)}>Edit</button>
+                        <button className="btn-danger" onClick={() => handleDelete(a.id)}>Remove</button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -797,12 +853,7 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
           <div className="form-row-3">
             <div className="form-group">
               <label>Commander</label>
-              <select value={playerId} onChange={e => setPlayerId(e.target.value)} required>
-                <option value="">— Select —</option>
-                {players.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}{p.faction ? ` (${p.faction})` : ''}</option>
-                ))}
-              </select>
+              <input value={myPlayer ? `${myPlayer.name}${myPlayer.faction ? ` (${myPlayer.faction})` : ''}` : '—'} disabled />
             </div>
             <div className="form-group">
               <label>List Name</label>
@@ -811,8 +862,25 @@ export default function ArmyLists({ campaignId, armyLists, players, onReload, to
             </div>
             <div className="form-group">
               <label>Points</label>
+              {phases.length > 0 && (
+                <select
+                  value={phases.find(p => String(p.points) === gameSize)?.points ?? ''}
+                  onChange={e => e.target.value && setGameSize(e.target.value)}
+                  style={{ marginBottom: '0.4rem' }}
+                >
+                  <option value="">— Select phase —</option>
+                  {phases.map(p => <option key={p.points} value={p.points}>{p.label}</option>)}
+                </select>
+              )}
               <input type="number" value={gameSize} onChange={e => setGameSize(e.target.value)} placeholder="2000" />
             </div>
+          </div>
+          <div className="form-group">
+            <label>Faction <span className="form-optional">(optional)</span></label>
+            <select value={faction} onChange={e => setFaction(e.target.value)}>
+              <option value="">— Select faction —</option>
+              {FACTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <label>Army List</label>

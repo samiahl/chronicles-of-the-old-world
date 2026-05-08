@@ -7,11 +7,12 @@ interface Props {
   challenges: Challenge[]
   players: Player[]
   authUser: User
+  readOnly?: boolean
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
 
-export default function ChallengeBoard({ campaignId, challenges, players, authUser, onReload, toast }: Props) {
+export default function ChallengeBoard({ campaignId, challenges, players, authUser, readOnly, onReload, toast }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [fromPlayerId, setFromPlayerId] = useState('')
   const [toPlayerId, setToPlayerId] = useState('')
@@ -126,9 +127,11 @@ export default function ChallengeBoard({ campaignId, challenges, players, authUs
           <h2 className="section-title">Challenge Board</h2>
           <p className="section-desc">Honour demands satisfaction</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
-          {showForm ? '× Close' : '+ New Challenge'}
-        </button>
+        {!readOnly && (
+          <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
+            {showForm ? '× Close' : '+ New Challenge'}
+          </button>
+        )}
       </div>
 
       {/* ── New Challenge Form ──────────────────────────────────────────── */}
@@ -211,6 +214,7 @@ export default function ChallengeBoard({ campaignId, challenges, players, authUs
                   challenge={c}
                   index={i}
                   myPlayer={myPlayer}
+                  readOnly={readOnly}
                   onStatus={updateStatus}
                   onDelete={handleDelete}
                 />
@@ -247,13 +251,14 @@ interface NoteProps {
   challenge: Challenge
   index: number
   myPlayer: Player | undefined
+  readOnly?: boolean
   onStatus: (id: string, status: string) => void
   onDelete: (id: string) => void
 }
 
 const ROTATIONS = [-2, 1.5, -1, 2, -0.5, 1, -1.8, 0.5]
 
-function ChallengeNote({ challenge: c, index, myPlayer, onStatus, onDelete }: NoteProps) {
+function ChallengeNote({ challenge: c, index, myPlayer, readOnly, onStatus, onDelete }: NoteProps) {
   const rot = ROTATIONS[index % ROTATIONS.length]
   const isTarget = myPlayer?.id === c.toPlayerId
   const isAuthor = myPlayer?.id === c.fromPlayerId
@@ -277,16 +282,16 @@ function ChallengeNote({ challenge: c, index, myPlayer, onStatus, onDelete }: No
       <div className="note-date">{fmtDate(c.createdAt)}</div>
 
       <div className="note-actions">
-        {isTarget && c.status === 'open' && (
+        {!readOnly && isTarget && c.status === 'open' && (
           <>
             <button className="note-btn note-accept" onClick={() => onStatus(c.id, 'accepted')}>Accept</button>
             <button className="note-btn note-decline" onClick={() => onStatus(c.id, 'declined')}>Decline</button>
           </>
         )}
-        {(isTarget || isAuthor) && c.status === 'accepted' && (
+        {!readOnly && (isTarget || isAuthor) && c.status === 'accepted' && (
           <button className="note-btn note-resolve" onClick={() => onStatus(c.id, 'resolved')}>Mark Resolved</button>
         )}
-        {(isAuthor || isTarget) && (
+        {!readOnly && (isAuthor || isTarget) && (
           <button className="note-btn note-delete" onClick={() => onDelete(c.id)}>×</button>
         )}
       </div>

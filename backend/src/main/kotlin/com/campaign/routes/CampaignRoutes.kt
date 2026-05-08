@@ -19,6 +19,11 @@ import java.time.Instant
 fun Route.campaignRoutes(db: MongoDatabase) {
     val campaigns = db.getCollection<Document>("campaigns")
     val players = db.getCollection<Document>("players")
+    val armyLists = db.getCollection<Document>("army_lists")
+    val battles = db.getCollection<Document>("battles")
+    val narratives = db.getCollection<Document>("narratives")
+    val scheduledGames = db.getCollection<Document>("scheduledGames")
+    val challenges = db.getCollection<Document>("challenges")
 
     route("/campaigns") {
         get {
@@ -103,6 +108,71 @@ fun Route.campaignRoutes(db: MongoDatabase) {
                 }
             }
 
+            post("/{id}/reopen") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                try {
+                    val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().firstOrNull()
+                        ?: return@post call.respond(HttpStatusCode.NotFound)
+                    if (campaignDoc.getString("createdBy") != userId) {
+                        return@post call.respond(HttpStatusCode.Forbidden)
+                    }
+                    campaigns.updateOne(
+                        Filters.eq("_id", ObjectId(id)),
+                        Updates.set("status", "active")
+                    )
+                    val updated = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().first()
+                    call.respond(updated.toCampaign())
+                } catch (_: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+
+            post("/{id}/finish") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                try {
+                    val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().firstOrNull()
+                        ?: return@post call.respond(HttpStatusCode.NotFound)
+                    if (campaignDoc.getString("createdBy") != userId) {
+                        return@post call.respond(HttpStatusCode.Forbidden)
+                    }
+                    campaigns.updateOne(
+                        Filters.eq("_id", ObjectId(id)),
+                        Updates.set("status", "finished")
+                    )
+                    val updated = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().first()
+                    call.respond(updated.toCampaign())
+                } catch (_: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+
+            delete("/{id}") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                try {
+                    val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(id))).toList().firstOrNull()
+                        ?: return@delete call.respond(HttpStatusCode.NotFound)
+                    if (campaignDoc.getString("createdBy") != userId) {
+                        return@delete call.respond(HttpStatusCode.Forbidden)
+                    }
+                    campaigns.deleteOne(Filters.eq("_id", ObjectId(id)))
+                    players.deleteMany(Filters.eq("campaignId", id))
+                    armyLists.deleteMany(Filters.eq("campaignId", id))
+                    battles.deleteMany(Filters.eq("campaignId", id))
+                    narratives.deleteMany(Filters.eq("campaignId", id))
+                    scheduledGames.deleteMany(Filters.eq("campaignId", id))
+                    challenges.deleteMany(Filters.eq("campaignId", id))
+                    call.respond(HttpStatusCode.NoContent)
+                } catch (_: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+
             post("/{id}/request-join") {
                 val principal = call.principal<JWTPrincipal>()!!
                 val userId = principal.payload.getClaim("userId").asString()
@@ -113,6 +183,9 @@ fun Route.campaignRoutes(db: MongoDatabase) {
                     val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(campaignId))).toList().firstOrNull()
                         ?: return@post call.respond(HttpStatusCode.NotFound)
                     val campaign = campaignDoc.toCampaign()
+                    if (campaign.status == "finished") {
+                        return@post call.respond(HttpStatusCode.Conflict, "Campaign is finished")
+                    }
                     if (campaign.members.any { it.userId == userId }) {
                         return@post call.respond(HttpStatusCode.Conflict)
                     }
@@ -207,12 +280,42 @@ fun Route.campaignRoutes(db: MongoDatabase) {
                     if (campaign.currentPhase >= campaign.milestones.size) {
                         return@post call.respond(HttpStatusCode.BadRequest, "Already at last phase")
                     }
+                    val newPhase = campaign.currentPhase + 1
+                    val newPoints = campaign.milestones[newPhase - 1].points
                     campaigns.updateOne(
                         Filters.eq("_id", ObjectId(campaignId)),
-                        Updates.set("currentPhase", campaign.currentPhase + 1)
+                        Updates.set("currentPhase", newPhase)
+                    )
+                    armyLists.updateMany(
+                        Filters.eq("campaignId", campaignId),
+                        Updates.set("gameSize", newPoints)
                     )
                     val updated = campaigns.find(Filters.eq("_id", ObjectId(campaignId))).toList().first()
                     call.respond(updated.toCampaign())
+                } catch (_: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+
+            delete("/{id}/leave") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asString()
+                val campaignId = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                try {
+                    val campaignDoc = campaigns.find(Filters.eq("_id", ObjectId(campaignId))).toList().firstOrNull()
+                        ?: return@delete call.respond(HttpStatusCode.NotFound)
+                    if (campaignDoc.getString("createdBy") == userId) {
+                        return@delete call.respond(HttpStatusCode.Forbidden, "Campaign creator cannot leave their own campaign")
+                    }
+                    campaigns.updateOne(
+                        Filters.eq("_id", ObjectId(campaignId)),
+                        Updates.pull("members", Document("userId", userId))
+                    )
+                    players.updateMany(
+                        Filters.and(Filters.eq("campaignId", campaignId), Filters.eq("userId", userId)),
+                        Updates.set("inactive", true)
+                    )
+                    call.respond(HttpStatusCode.NoContent)
                 } catch (_: IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest)
                 }

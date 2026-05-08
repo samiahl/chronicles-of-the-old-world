@@ -8,6 +8,7 @@ interface Props {
   scheduledGames: ScheduledGame[]
   players: Player[]
   authUser: User
+  readOnly?: boolean
   onReload: () => void
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
@@ -26,7 +27,7 @@ const emptyForm = (date = ''): GameForm => ({
   notes: '',
 })
 
-export default function Calendar({ campaignId, scheduledGames, players, authUser, onReload, toast }: Props) {
+export default function Calendar({ campaignId, scheduledGames, players, authUser, readOnly, onReload, toast }: Props) {
   const myPlayer = players.find(p => p.userId === authUser.id)
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
@@ -114,9 +115,11 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
           <h2 className="section-title">Campaign Calendar</h2>
           <p className="section-desc">Schedule and track upcoming battles</p>
         </div>
-        <button className="btn-primary" onClick={() => { setForm(emptyForm()); setShowModal(true) }}>
-          + Schedule Game
-        </button>
+        {!readOnly && (
+          <button className="btn-primary" onClick={() => { setForm(emptyForm()); setShowModal(true) }}>
+            + Schedule Game
+          </button>
+        )}
       </div>
 
       {/* Month grid */}
@@ -141,12 +144,12 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
               <div
                 key={dateStr}
                 className={`cal-cell${isToday ? ' cal-today' : ''}${isPast ? ' cal-past' : ''}`}
-                onClick={() => !isPast && openScheduleOn(dateStr)}
-                title={isPast ? undefined : 'Click to schedule a game'}
+                onClick={() => !isPast && !readOnly && openScheduleOn(dateStr)}
+                title={isPast || readOnly ? undefined : 'Click to schedule a game'}
               >
                 <span className="cal-day-num">{day}</span>
                 {games.map(g => {
-                  const canDelete = myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
+                  const canDelete = !readOnly && myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
                   return (
                     <div key={g.id} className="cal-game-chip" onClick={e => e.stopPropagation()}>
                       <span className="cal-chip-text">{g.player1Name} vs {g.player2Name}</span>
@@ -172,7 +175,7 @@ export default function Calendar({ campaignId, scheduledGames, players, authUser
           <h3 className="cal-upcoming-title">Upcoming Battles</h3>
           <div className="cal-upcoming-list">
             {upcoming.map(g => {
-              const canDelete = myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
+              const canDelete = !readOnly && myPlayer && (g.player1Id === myPlayer.id || g.player2Id === myPlayer.id)
               return (
                 <div key={g.id} className="cal-upcoming-item">
                   <div className="cal-upcoming-date">{fmtDisplay(g.date)}</div>

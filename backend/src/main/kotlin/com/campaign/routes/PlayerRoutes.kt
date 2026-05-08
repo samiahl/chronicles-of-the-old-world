@@ -3,6 +3,7 @@ package com.campaign.routes
 import com.campaign.model.CreatePlayerRequest
 import com.campaign.model.Player
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -16,6 +17,7 @@ import java.time.Instant
 
 fun Route.playerRoutes(db: MongoDatabase) {
     val col = db.getCollection<Document>("players")
+    val campaigns = db.getCollection<Document>("campaigns")
 
     route("/players") {
         get {
@@ -42,7 +44,18 @@ fun Route.playerRoutes(db: MongoDatabase) {
             val id = call.parameters["id"]
                 ?: return@delete call.respond(HttpStatusCode.BadRequest)
             try {
-                col.deleteOne(Filters.eq("_id", ObjectId(id)))
+                val playerDoc = col.find(Filters.eq("_id", ObjectId(id))).toList().firstOrNull()
+                if (playerDoc != null) {
+                    val playerUserId = playerDoc.getString("userId")
+                    val campaignId = playerDoc.getString("campaignId")
+                    if (playerUserId != null && campaignId != null) {
+                        campaigns.updateOne(
+                            Filters.eq("_id", ObjectId(campaignId)),
+                            Updates.pull("members", Document("userId", playerUserId))
+                        )
+                    }
+                }
+                col.updateOne(Filters.eq("_id", ObjectId(id)), Updates.set("inactive", true))
                 call.respond(HttpStatusCode.NoContent)
             } catch (_: IllegalArgumentException) {
                 call.respond(HttpStatusCode.BadRequest)
@@ -58,4 +71,5 @@ fun Document.toPlayer() = Player(
     campaignId = getString("campaignId"),
     userId = getString("userId"),
     createdAt = getString("createdAt") ?: Instant.now().toString(),
+    inactive = getBoolean("inactive") ?: false,
 )
