@@ -883,7 +883,7 @@ function parseOWBExport(text: string): ParsedOWB {
         heroicActions: [],
       })
     } else {
-      units.push({ id: crypto.randomUUID(), name: currentEntryName, notes })
+      units.push({ id: crypto.randomUUID(), name: currentEntryName, notes, xp: null })
     }
     currentEntryName = ''
     currentOptions = []

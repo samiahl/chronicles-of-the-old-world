@@ -33,4 +33,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("ch.qos.logback:logback-classic:$logback_version")
+
+    testImplementation("io.ktor:ktor-server-test-host-jvm:$ktor_version")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.12.0")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
