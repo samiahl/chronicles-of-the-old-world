@@ -5,6 +5,6 @@ RUN gradle installDist --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-COPY --from=build /app/build/install/backend .
+COPY --from=build /app/build/install/chronicles .
 EXPOSE 8080
-CMD ["bin/backend"]
+CMD ["bin/chronicles"]
