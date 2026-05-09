@@ -16,7 +16,8 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null)
+  const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -44,6 +45,19 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
     }
     setSavingProfile(true)
     try {
+      // Upload avatar first if one was selected
+      if (pendingAvatar) {
+        if (pendingAvatar.size > AVATAR_MAX_BYTES) {
+          toast('Avatar must be under 500KB', 'err')
+          setSavingProfile(false)
+          return
+        }
+        const url = await uploadImage(pendingAvatar)
+        await api.put<User>('/auth/me/avatar', { picture: url })
+        setPendingAvatar(null)
+        setPendingAvatarPreview(null)
+      }
+
       const res = await api.put<{ token: string; user: User }>('/auth/me', {
         username: username || null,
         password: newPassword || null,
@@ -62,28 +76,12 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
     }
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
-    // Reset so the same file can be selected again later
     e.target.value = ''
-    if (file.size > AVATAR_MAX_BYTES) { toast('Avatar must be under 500KB', 'err'); return }
-    setUploadingAvatar(true)
-    try {
-      const url = await uploadImage(file)
-      console.log('[avatar] Cloudinary URL:', url)
-      const updated = await api.put<User>('/auth/me/avatar', { picture: url })
-      console.log('[avatar] Backend response:', updated)
-      localStorage.setItem('auth_user', JSON.stringify(updated))
-      onUpdate(updated)
-      toast('Avatar updated')
-    } catch (err) {
-      console.error('[avatar] Error:', err)
-      const msg = err instanceof Error ? err.message : String(err)
-      toast(`Avatar upload failed: ${msg}`, 'err')
-    } finally {
-      setUploadingAvatar(false)
-    }
+    if (!file) return
+    setPendingAvatar(file)
+    setPendingAvatarPreview(URL.createObjectURL(file))
   }
 
   const handleLeaveCampaign = async (campaign: Campaign) => {
@@ -146,16 +144,19 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
           <h2 className="profile-page-section-title">Account Settings</h2>
           <div className="profile-page-card">
             <div className="profile-page-avatar-row">
-              {authUser.profilePicture
-                ? <img src={authUser.profilePicture} alt="" className="profile-page-avatar-img" />
-                : <div className="profile-page-avatar-placeholder">{authUser.username.charAt(0).toUpperCase()}</div>
+              {pendingAvatarPreview
+                ? <img src={pendingAvatarPreview} alt="" className="profile-page-avatar-img" />
+                : authUser.profilePicture
+                  ? <img src={authUser.profilePicture} alt="" className="profile-page-avatar-img" />
+                  : <div className="profile-page-avatar-placeholder">{authUser.username.charAt(0).toUpperCase()}</div>
               }
               <div>
                 <div className="profile-page-username">{authUser.username}</div>
-                <button className="btn-ghost btn-sm" onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}>
-                  {uploadingAvatar ? 'Uploading…' : 'Change avatar'}
+                <button className="btn-ghost btn-sm" onClick={() => avatarRef.current?.click()}>
+                  {pendingAvatarPreview ? 'Change selection' : 'Change avatar'}
                 </button>
-                <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+                {pendingAvatarPreview && <div className="form-hint" style={{ marginTop: '0.25rem' }}>Save Changes to apply</div>}
+                <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarPick} style={{ display: 'none' }} />
               </div>
             </div>
 
