@@ -70,19 +70,17 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
     if (file.size > AVATAR_MAX_BYTES) { toast('Avatar must be under 500KB', 'err'); return }
     setUploadingAvatar(true)
     try {
-      let url: string
-      try {
-        url = await uploadImage(file)
-      } catch {
-        toast('Image upload failed — check your Cloudinary preset is set to Unsigned', 'err')
-        return
-      }
+      const url = await uploadImage(file)
+      console.log('[avatar] Cloudinary URL:', url)
       const updated = await api.put<User>('/auth/me/avatar', { picture: url })
+      console.log('[avatar] Backend response:', updated)
       localStorage.setItem('auth_user', JSON.stringify(updated))
       onUpdate(updated)
       toast('Avatar updated')
-    } catch {
-      toast('Failed to save avatar', 'err')
+    } catch (err) {
+      console.error('[avatar] Error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      toast(`Avatar upload failed: ${msg}`, 'err')
     } finally {
       setUploadingAvatar(false)
     }

@@ -15,7 +15,11 @@ export async function uploadImage(file: File): Promise<string> {
     body: formData,
   })
 
-  if (!res.ok) throw new Error('Image upload failed')
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`
+    try { const body = await res.json(); detail = body.error?.message ?? detail } catch { /* ignore */ }
+    throw new Error(detail)
+  }
   const data = await res.json()
   return data.secure_url as string
 }
