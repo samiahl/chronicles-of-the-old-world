@@ -58,6 +58,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
   })
   const [showStandings, setShowStandings] = useState(false)
   const [uploadingImages, setUploadingImages] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const set = (k: keyof BattleForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -92,8 +93,10 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitting) return
     if (!form.result) return toast('Select a battle result', 'err')
     if (form.player1Id === form.player2Id) return toast('Players must be different', 'err')
+    setSubmitting(true)
     try {
       await api.post(`/campaigns/${campaignId}/battles`, {
         date: form.date,
@@ -117,6 +120,8 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
       toast('Battle recorded')
     } catch {
       toast('Failed to record battle', 'err')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -457,7 +462,7 @@ export default function Annals({ campaignId, battles, players, scoreboard, sched
 
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="submit" className="btn-primary">Record Battle</button>
+            <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Recording…' : 'Record Battle'}</button>
           </div>
         </form>
       </Modal>

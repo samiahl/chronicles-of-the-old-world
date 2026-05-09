@@ -5,9 +5,11 @@ import type { Campaign, Milestone, User } from '../types'
 interface Props {
   authUser: User
   onSelect: (campaign: Campaign) => void
+  onProfile: () => void
+  onLogout: () => void
 }
 
-export default function CampaignList({ authUser, onSelect }: Props) {
+export default function CampaignList({ authUser, onSelect, onProfile, onLogout }: Props) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -95,6 +97,15 @@ export default function CampaignList({ authUser, onSelect }: Props) {
         <div className="header-line" />
         <h1 className="campaign-title">⚔ Chronicles of Blood and Glory ⚔</h1>
         <p className="campaign-subtitle">The Old World Campaign Manager</p>
+        <div className="header-user-bar">
+          <div className="user-info">
+            {authUser.profilePicture && (
+              <img src={authUser.profilePicture} alt="" className="user-avatar" />
+            )}
+            <button className="btn-ghost user-name" onClick={onProfile}>{authUser.username}</button>
+            <button className="btn-ghost" onClick={onLogout}>Sign out</button>
+          </div>
+        </div>
         <div className="header-line" />
       </header>
 

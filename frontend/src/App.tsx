@@ -202,7 +202,7 @@ export default function App() {
 
   // Logged in but no campaign selected
   if (!currentCampaign) {
-    return <CampaignList authUser={authUser} onSelect={handleSelectCampaign} />
+    return <CampaignList authUser={authUser} onSelect={handleSelectCampaign} onProfile={() => setShowProfilePage(true)} onLogout={handleLogout} />
   }
 
   function phaseLabel(c: Campaign): string {

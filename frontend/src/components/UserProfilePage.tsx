@@ -16,6 +16,7 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -64,15 +65,26 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    // Reset so the same file can be selected again later
+    e.target.value = ''
     if (file.size > AVATAR_MAX_BYTES) { toast('Avatar must be under 500KB', 'err'); return }
+    setUploadingAvatar(true)
     try {
-      const url = await uploadImage(file)
+      let url: string
+      try {
+        url = await uploadImage(file)
+      } catch {
+        toast('Image upload failed — check your Cloudinary preset is set to Unsigned', 'err')
+        return
+      }
       const updated = await api.put<User>('/auth/me/avatar', { picture: url })
       localStorage.setItem('auth_user', JSON.stringify(updated))
       onUpdate(updated)
       toast('Avatar updated')
     } catch {
-      toast('Failed to update avatar', 'err')
+      toast('Failed to save avatar', 'err')
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -142,8 +154,8 @@ export default function UserProfilePage({ authUser, onBack, onUpdate, onLogout, 
               }
               <div>
                 <div className="profile-page-username">{authUser.username}</div>
-                <button className="btn-ghost btn-sm" onClick={() => avatarRef.current?.click()}>
-                  Change avatar
+                <button className="btn-ghost btn-sm" onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}>
+                  {uploadingAvatar ? 'Uploading…' : 'Change avatar'}
                 </button>
                 <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
               </div>

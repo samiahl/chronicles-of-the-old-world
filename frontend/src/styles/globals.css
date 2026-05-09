@@ -7,15 +7,15 @@
   --bg-input:    #0d0c08;
   --gold:        #c9a227;
   --gold-light:  #e8c256;
-  --gold-dim:    #7a6218;
-  --gold-border: #3d3010;
+  --gold-dim:    #9e8220;
+  --gold-border: #52401a;
   --red:         #8b1a1a;
   --red-light:   #c84040;
   --text:        #f0e8cc;
-  --text-sec:    #c4b48a;
-  --text-muted:  #8a7a5c;
-  --border:      #2a2418;
-  --border-gold: #3d3010;
+  --text-sec:    #d0bf94;
+  --text-muted:  #b0a070;
+  --border:      #3a3020;
+  --border-gold: #52401a;
   --win:         #2d5427;
   --loss:        #5a1818;
   --draw:        #3a3520;
@@ -69,10 +69,10 @@ header {
 }
 
 .campaign-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--text-sec);
   font-style: italic;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
@@ -94,7 +94,7 @@ header {
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   padding: 0.85rem 1.3rem;
@@ -153,9 +153,9 @@ main {
   color: var(--gold-light);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   padding: 0.55rem 1.1rem;
   text-transform: uppercase;
   transition: all 0.2s;
@@ -175,9 +175,9 @@ main {
   color: var(--text-sec);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   padding: 0.55rem 1.1rem;
   text-transform: uppercase;
   transition: all 0.2s;
@@ -186,12 +186,12 @@ main {
 
 .btn-danger {
   background: transparent;
-  border: 1px solid #3a1212;
+  border: 1px solid #5a1f1f;
   border-radius: 2px;
-  color: #7a3030;
+  color: #a04040;
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   padding: 0.3rem 0.65rem;
@@ -222,7 +222,7 @@ main {
   border-bottom: 2px solid var(--gold-border);
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.18em;
   padding: 0.7rem 0.9rem;
@@ -295,7 +295,7 @@ main {
 }
 .battle-num {
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
 }
@@ -317,7 +317,7 @@ main {
 
 .victory-badge {
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #7fbf7f;
@@ -330,9 +330,9 @@ main {
   align-items: center;
   gap: 0.2rem;
 }
-.vs-text { font-family: 'Cinzel', serif; font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.2em; }
+.vs-text { font-family: 'Cinzel', serif; font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.2em; }
 .vs-icon { font-size: 1.4rem; }
-.draw-label { font-family: 'Cinzel', serif; font-size: 0.65rem; color: #c0c080; letter-spacing: 0.1em; text-transform: uppercase; }
+.draw-label { font-family: 'Cinzel', serif; font-size: 0.72rem; color: #c0c080; letter-spacing: 0.1em; text-transform: uppercase; }
 
 .battle-notes {
   border-top: 1px solid var(--border);
@@ -351,7 +351,7 @@ main {
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   padding: 0.65rem 1.25rem;
   text-transform: uppercase;
@@ -377,7 +377,7 @@ main {
 }
 .report-label {
   font-family: 'Cinzel', serif;
-  font-size: 0.63rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   color: var(--gold-dim);
   text-transform: uppercase;
@@ -436,7 +436,7 @@ main {
   border: 1px solid var(--gold-border);
   color: var(--gold-dim);
   font-family: 'Cinzel', serif;
-  font-size: 0.63rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   padding: 0.18rem 0.5rem;
   text-transform: uppercase;
@@ -484,7 +484,7 @@ main {
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   padding: 0.55rem 1rem;
   text-transform: uppercase;
@@ -597,7 +597,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 .form-group label {
   font-family: 'Cinzel', serif;
-  font-size: 0.63rem;
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   color: var(--gold-dim);
   text-transform: uppercase;
@@ -749,7 +749,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   padding: 0.3rem 0.5rem;
   text-transform: uppercase;
@@ -759,7 +759,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Small button ───────────────────────────────────────────────────────── */
 .btn-sm {
-  font-size: 0.6rem !important;
+  font-size: 0.7rem !important;
   padding: 0.25rem 0.55rem !important;
 }
 
@@ -864,14 +864,14 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 }
 .campaign-card-enter {
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--gold-dim);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .campaign-pending-badge {
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
   font-style: italic;
@@ -952,7 +952,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 /* ── Narrative points badge ─────────────────────────────────────────────── */
 .narrative-pts {
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   color: var(--gold-dim);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1089,7 +1089,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-radius: 2px;
   color: var(--gold-dim);
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   padding: 0.1rem 0.4rem;
   text-transform: uppercase;
@@ -1108,7 +1108,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   padding: 0.25rem 0;
   text-transform: uppercase;
@@ -1134,7 +1134,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 .char-detail-label {
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   color: var(--gold-dim);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1160,7 +1160,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 .counter-label {
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1196,7 +1196,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 .heroic-log-title {
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   color: var(--gold-dim);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1277,7 +1277,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   margin-top: 0.5rem;
   padding: 0.5rem;
@@ -1414,7 +1414,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-radius: 2px;
   color: var(--gold-dim);
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   padding: 0.15rem 0.45rem;
   text-transform: uppercase;
@@ -1434,7 +1434,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: var(--text-muted);
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   padding: 0.4rem 0.85rem;
   text-transform: uppercase;
@@ -1480,7 +1480,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-radius: 10px;
   color: #ffaaaa;
   font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0;
   margin-left: 0.35rem;
@@ -1542,7 +1542,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .parchment-label {
   color: #6b4015;
   font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -1663,7 +1663,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .note-status-ribbon {
   color: #7a5010;
   font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
+  font-size: 0.68rem;
   letter-spacing: 0.18em;
   margin-bottom: 0.6rem;
   text-transform: uppercase;
@@ -1721,7 +1721,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: #6b4015;
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   letter-spacing: 0.1em;
   padding: 0.2rem 0.55rem;
   text-transform: uppercase;
@@ -1876,7 +1876,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-bottom: 1px solid var(--border);
 }
 
-.profile-count { color: var(--gold-dim); font-size: 0.68rem; }
+.profile-count { color: var(--gold-dim); font-size: 0.75rem; }
 
 .profile-empty {
   color: var(--text-muted);
@@ -1897,7 +1897,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 }
 .profile-detail-label {
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1959,7 +1959,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .profile-campaign-meta { color: var(--text-muted); font-size: 0.78rem; font-style: italic; }
 .profile-campaign-status {
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1981,7 +1981,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 }
 .profile-game-result {
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   min-width: 42px;
@@ -2071,7 +2071,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-right: 1px solid var(--border);
   color: var(--text-muted);
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   padding: 0.5rem 0;
   text-align: center;
@@ -2120,7 +2120,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 
 .cal-chip-text {
   color: var(--gold-light);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2193,7 +2193,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .cal-upcoming-vs {
   color: var(--text-muted);
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -2234,7 +2234,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   color: var(--gold-dim);
   display: inline-block;
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   margin-bottom: 0.4rem;
   padding: 0.15rem 0.4rem;
@@ -2248,7 +2248,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .profile-pending-badge {
   color: var(--gold-dim);
   font-family: 'Cinzel', serif;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   margin-bottom: 0.2rem;
   text-transform: uppercase;
@@ -2261,7 +2261,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   border-radius: 2px;
   color: #c07070;
   font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   margin-left: 0.5rem;
   padding: 0.1rem 0.35rem;
