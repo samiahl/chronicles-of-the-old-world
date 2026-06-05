@@ -34,7 +34,9 @@ fun Application.module() {
     }
 
     install(CORS) {
-        anyHost()
+        allowHost("chronicles-of-the-old-world.com", schemes = listOf("https"))
+        allowHost("www.chronicles-of-the-old-world.com", schemes = listOf("https"))
+        allowHost("localhost:5173", schemes = listOf("http"))
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         allowMethod(HttpMethod.Delete)

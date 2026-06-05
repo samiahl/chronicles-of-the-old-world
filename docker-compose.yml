@@ -8,5 +8,15 @@ services:
     environment:
       MONGO_INITDB_DATABASE: warhammer_campaign
 
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017
+      JWT_SECRET: dev-secret-local
+    depends_on:
+      - mongodb
+
 volumes:
   mongo_data:
