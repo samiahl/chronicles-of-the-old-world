@@ -11,6 +11,7 @@ data class Player(
     val userId: String? = null,
     val createdAt: String,
     val inactive: Boolean = false,
+    val profilePicture: String? = null,
 )
 
 @Serializable

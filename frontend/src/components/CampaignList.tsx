@@ -21,8 +21,16 @@ export default function CampaignList({ authUser, onSelect, onProfile, onLogout }
   const [createType, setCreateType] = useState<'standard' | 'path_of_glory' | 'battle_march'>('standard')
   const [createSubType, setCreateSubType] = useState('')
   const [createStartingPoints, setCreateStartingPoints] = useState('500')
+  const [createMilestoneIncrement, setCreateMilestoneIncrement] = useState('')
   const [createMilestones, setCreateMilestones] = useState<{ name: string; points: string }[]>([])
   const [createPointsLimit, setCreatePointsLimit] = useState('500')
+
+  const computeMilestonePoints = (index: number, starting: string, increment: string) => {
+    const inc = parseInt(increment) || 0
+    if (inc === 0) return ''
+    const base = parseInt(starting) || 0
+    return String(base + (index + 1) * inc)
+  }
 
   const load = async () => {
     try {
@@ -55,7 +63,7 @@ export default function CampaignList({ authUser, onSelect, onProfile, onLogout }
       })
       setCreateName(''); setCreateDesc(''); setCreateTheme('')
       setCreateType('standard'); setCreateSubType(''); setCreateStartingPoints('500')
-      setCreateMilestones([]); setCreatePointsLimit('500')
+      setCreateMilestoneIncrement(''); setCreateMilestones([]); setCreatePointsLimit('500')
       setShowCreate(false)
       await load()
       onSelect(campaign)
@@ -169,7 +177,16 @@ export default function CampaignList({ authUser, onSelect, onProfile, onLogout }
             {createType === 'path_of_glory' && (
               <div className="form-group">
                 <label>Starting Points</label>
-                <input type="number" value={createStartingPoints} onChange={e => setCreateStartingPoints(e.target.value)} min="0" />
+                <input
+                  type="number"
+                  value={createStartingPoints}
+                  onChange={e => {
+                    const v = e.target.value
+                    setCreateStartingPoints(v)
+                    setCreateMilestones(ms => ms.map((m, i) => ({ ...m, points: computeMilestonePoints(i, v, createMilestoneIncrement) })))
+                  }}
+                  min="0"
+                />
                 <label style={{ marginTop: '0.75rem' }}>Number of Milestones</label>
                 <input
                   type="number"
@@ -179,9 +196,26 @@ export default function CampaignList({ authUser, onSelect, onProfile, onLogout }
                   onChange={e => {
                     const n = Math.max(0, Math.min(10, parseInt(e.target.value) || 0))
                     setCreateMilestones(ms => {
-                      if (n > ms.length) return [...ms, ...Array(n - ms.length).fill({ name: '', points: '' })]
+                      if (n > ms.length) {
+                        const additions = Array.from({ length: n - ms.length }, (_, k) => ({
+                          name: '',
+                          points: computeMilestonePoints(ms.length + k, createStartingPoints, createMilestoneIncrement),
+                        }))
+                        return [...ms, ...additions]
+                      }
                       return ms.slice(0, n)
                     })
+                  }}
+                />
+                <label style={{ marginTop: '0.75rem' }}>Milestone Increment <span className="form-optional">(auto-fills points)</span></label>
+                <input
+                  type="number"
+                  min="0"
+                  value={createMilestoneIncrement}
+                  onChange={e => {
+                    const v = e.target.value
+                    setCreateMilestoneIncrement(v)
+                    setCreateMilestones(ms => ms.map((m, i) => ({ ...m, points: computeMilestonePoints(i, createStartingPoints, v) })))
                   }}
                 />
                 {createMilestones.length > 0 && <label style={{ marginTop: '0.75rem' }}>Milestones</label>}
@@ -203,7 +237,14 @@ export default function CampaignList({ authUser, onSelect, onProfile, onLogout }
                       <button type="button" className="btn-danger" onClick={() => setCreateMilestones(ms => ms.filter((_, j) => j !== i))}>×</button>
                     </div>
                   ))}
-                  <button type="button" className="char-add-btn" onClick={() => setCreateMilestones(ms => [...ms, { name: '', points: '' }])}>+ Add Milestone</button>
+                  <button
+                    type="button"
+                    className="char-add-btn"
+                    onClick={() => setCreateMilestones(ms => [
+                      ...ms,
+                      { name: '', points: computeMilestonePoints(ms.length, createStartingPoints, createMilestoneIncrement) },
+                    ])}
+                  >+ Add Milestone</button>
                 </div>
               </div>
             )}

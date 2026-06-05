@@ -49,6 +49,7 @@ export interface Player {
   userId: string | null
   createdAt: string
   inactive: boolean
+  profilePicture: string | null
 }
 
 export interface Battle {

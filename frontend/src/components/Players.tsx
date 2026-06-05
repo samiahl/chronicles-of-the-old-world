@@ -75,7 +75,10 @@ export default function Players({ campaignId, players, armyLists, battles, authU
         <div className="players-grid">
           {players.map(p => (
             <div key={p.id} className="player-card" onClick={() => setProfilePlayer(p)} style={{ cursor: 'pointer' }}>
-              <div className="player-card-avatar">{p.name.charAt(0).toUpperCase()}</div>
+              {p.profilePicture
+                ? <img src={p.profilePicture} alt="" className="player-card-avatar" />
+                : <div className="player-card-avatar">{p.name.charAt(0).toUpperCase()}</div>
+              }
               <div className="player-card-info">
                 <div className="player-name">
                   {p.name}

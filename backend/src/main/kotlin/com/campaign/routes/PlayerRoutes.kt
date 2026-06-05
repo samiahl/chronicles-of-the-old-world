@@ -18,13 +18,19 @@ import java.time.Instant
 fun Route.playerRoutes(db: MongoDatabase) {
     val col = db.getCollection<Document>("players")
     val campaigns = db.getCollection<Document>("campaigns")
+    val users = db.getCollection<Document>("users")
 
     route("/players") {
         get {
             val campaignId = call.parameters["campaignId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-            val players = col.find(Filters.eq("campaignId", campaignId)).toList()
+            val playerDocs = col.find(Filters.eq("campaignId", campaignId)).toList()
                 .sortedBy { it.getString("name") }
-                .map { it.toPlayer() }
+            val userIds = playerDocs.mapNotNull { it.getString("userId") }.distinct()
+            val pictures = if (userIds.isNotEmpty()) {
+                users.find(Filters.`in`("_id", userIds.map { ObjectId(it) })).toList()
+                    .associate { it.getObjectId("_id").toHexString() to it.getString("profilePicture") }
+            } else emptyMap()
+            val players = playerDocs.map { it.toPlayer(pictures[it.getString("userId")]) }
             call.respond(players)
         }
 
@@ -64,7 +70,7 @@ fun Route.playerRoutes(db: MongoDatabase) {
     }
 }
 
-fun Document.toPlayer() = Player(
+fun Document.toPlayer(profilePicture: String? = null) = Player(
     id = getObjectId("_id").toHexString(),
     name = getString("name") ?: "",
     faction = getString("faction"),
@@ -72,4 +78,5 @@ fun Document.toPlayer() = Player(
     userId = getString("userId"),
     createdAt = getString("createdAt") ?: Instant.now().toString(),
     inactive = getBoolean("inactive") ?: false,
+    profilePicture = profilePicture,
 )

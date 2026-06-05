@@ -1770,6 +1770,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
   font-weight: 700;
   height: 42px;
   justify-content: center;
+  object-fit: cover;
   width: 42px;
 }
 .player-card-info { flex: 1; min-width: 0; }
