@@ -2,8 +2,9 @@
 ### The Old World Campaign Manager
 
 A narrative campaign manager for Warhammer: The Old World tabletop miniature wargames.
-Track battles, write the story of your campaign, manage army lists, schedule games,
-issue challenges, and keep standings — all from the browser.
+Multi-user, multi-campaign — register an account, found a campaign or request to join
+one, log battles, track army growth, schedule games, and write the saga of your
+warband. All from the browser.
 
 ---
 
@@ -11,13 +12,17 @@ issue challenges, and keep standings — all from the browser.
 
 | Service | Role | URL |
 |---------|------|-----|
-| **Vercel** | Frontend (React SPA) | https://chronicles-of-the-old-world.vercel.app |
-| **Render** | Backend (Kotlin/Ktor API) | https://chronicles-of-the-old-world.onrender.com |
-| **MongoDB Atlas** | Database (M0 free tier) | Managed cloud cluster |
+| **Azure Static Web Apps** | Frontend (React SPA) | https://chronicles-of-the-old-world.com |
+| **Azure Container Apps** | Backend (Kotlin/Ktor API) | `chronicles-of-the-old-world-be.*.azurecontainerapps.io` |
+| **Azure Cosmos DB for MongoDB (vCore)** | Database | Managed cloud cluster |
+| **Cloudinary** | Image hosting (avatars, battle photos) | Direct browser uploads |
+| **Cloudflare** | DNS + domain registrar | `chronicles-of-the-old-world.com` |
+| **Application Insights** | Backend telemetry | Azure-managed |
+| **cron-job.org** | Keep-alive pings every 10 min | Two redundant jobs (EU + NA) |
 
-> **Cold starts** — Render's free tier spins down after 15 minutes of inactivity.
-> The first request after a period of quiet may take 30–50 seconds while the
-> backend wakes up. Subsequent requests are instant.
+> **Cold starts** — The Container App scales to zero when idle. The first request
+> after a quiet period may take 20–40 seconds to wake the container. The cron-job.org
+> pings keep it warm during the day.
 
 ---
 
@@ -26,59 +31,47 @@ issue challenges, and keep standings — all from the browser.
 ```
 Browser
   │
-  ├── Static assets served by Vercel CDN
+  ├── Static assets  →  Azure Static Web Apps CDN (chronicles-of-the-old-world.com)
   │
-  └── API calls  →  /api/*  →  Vercel rewrite proxy
-                                    │
-                                    └──► Render (Ktor, port 8080)
-                                              │
-                                              └──► MongoDB Atlas (cloud)
+  ├── Image uploads  →  Cloudinary (direct from browser)
+  │
+  └── API calls      →  Azure Container Apps (HTTPS, custom subdomain)
+                            │
+                            ├──► Cosmos DB for MongoDB vCore  (data)
+                            └──► Application Insights         (telemetry)
 ```
 
-`frontend/vercel.json` rewrites every `/api/*` request to the Render backend,
-so the frontend never talks to Render directly in production — it always goes
-through the same origin.
+The frontend reads `VITE_API_URL` at build time and points API calls directly at the
+Container Apps URL — no rewrite proxy. CORS on the backend is locked down to the
+production domain plus `localhost:5173` for development.
 
 ---
 
-## Hosting setup
+## Deployment
 
-### MongoDB Atlas
+Both services deploy automatically on push to `main` via GitHub Actions:
 
-1. Create a free account at https://cloud.mongodb.com
-2. Build a free **M0** cluster (512 MB, shared)
-3. Create a database user with **Read and Write** access
-4. Under **Network Access**, allow `0.0.0.0/0` (required for Render)
-5. Get the connection string: **Connect → Drivers → Node.js** and copy the URI
-   - Replace `<password>` with your actual password
-   - Add the database name before the query string:
-     `mongodb+srv://user:pass@cluster.mongodb.net/warhammer_campaign?retryWrites=true&w=majority`
+| Workflow | Trigger | Action |
+|---|---|---|
+| `.github/workflows/deploy-backend.yml` | changes under `backend/**` | Builds Docker image, pushes to `ghcr.io`, updates Container App |
+| `.github/workflows/deploy-frontend.yml` | changes under `frontend/**` | Builds Vite app with `VITE_API_URL`, uploads to Static Web Apps |
 
-### Render
+### Required GitHub Secrets
 
-1. Create a free account at https://render.com
-2. **New → Web Service** → connect your GitHub repo
-3. Settings:
-   - **Name**: `chronicles-of-the-old-world`
-   - **Language**: Docker
-   - **Branch**: `main`
-   - **Root directory**: `backend`
-   - **Region**: EU Central (or closest to your users)
-   - **Instance type**: Free
-4. Under **Environment Variables**, add:
-   - `MONGODB_URI` — your Atlas connection string (with password and DB name)
-   - `JWT_SECRET` — any long random string (e.g. output of `openssl rand -hex 32`)
-5. Deploy. Render builds the Docker image and starts the service.
+| Name | Purpose |
+|------|---------|
+| `AZURE_CREDENTIALS` | Service principal JSON for the deploy workflows |
+| `AZURE_RESOURCE_GROUP` | Target resource group |
+| `AZURE_CONTAINER_APP_NAME` | Name of the backend Container App |
+| `GHCR_PAT` | GitHub PAT with `read:packages` + `write:packages` |
+| `MONGODB_URI` | Cosmos DB connection string (URL-encoded password) |
+| `JWT_SECRET` | Symmetric secret for signing JWTs |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights ingestion string |
+| `VITE_API_URL` | Public backend URL, baked into frontend build |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web Apps deployment token |
 
-### Vercel
-
-1. Create a free account at https://vercel.com
-2. **Add New Project** → import your GitHub repo
-3. Settings:
-   - **Root directory**: `frontend`
-   - **Framework preset**: Vite
-4. No environment variables needed — the Render URL is baked into `vercel.json`
-5. Deploy. Subsequent pushes to `main` auto-deploy both services.
+The same three runtime secrets (`MONGODB_URI`, `JWT_SECRET`, `APPLICATIONINSIGHTS_CONNECTION_STRING`)
+are also configured on the Container App itself as `secretref:` env vars.
 
 ---
 
@@ -105,11 +98,11 @@ cd ..
 
 ### Running locally
 
-Open three terminal windows.
+Three terminals.
 
 **Terminal 1 — Database**
 ```bash
-docker-compose up -d
+docker-compose up -d mongodb
 ```
 
 **Terminal 2 — Backend**
@@ -127,8 +120,19 @@ npm run dev
 
 Open **http://localhost:5173**.
 
-The local frontend talks directly to `http://localhost:8080` (configured in
-`src/api/client.ts` via Vite's dev proxy).
+In dev, `VITE_API_URL` is undefined, so `frontend/src/api/client.ts` falls back to
+`/api`, and Vite's dev proxy forwards `/api/*` to `http://localhost:8080`.
+
+### Multi-user testing locally
+
+To simulate two players on one machine, run a second Vite instance on a different port:
+
+```bash
+npm run dev -- --port 5174
+```
+
+Use a different browser (or browser profile) for each port so the JWT in
+`localStorage` stays separate.
 
 ### Running backend tests
 
@@ -141,38 +145,51 @@ Tests use an embedded MongoDB instance (Flapdoodle) — no running database need
 
 ### Stopping
 
-Kill backend and frontend with `Ctrl+C`, then:
+`Ctrl+C` the backend and frontend, then:
 ```bash
 docker-compose down
 ```
 
-Data is stored in a Docker volume and persists between sessions.
+Data persists in a Docker volume across sessions.
 
 ---
 
 ## Features
 
+### Authentication & users
+
+- Register / log in with username + password (BCrypt hashed)
+- JWT-based auth, token kept in `localStorage`
+- User profiles with avatar uploads to Cloudinary
+- Edit username, change password, delete account
+- Same user can participate in multiple campaigns
+
+### Multi-campaign model
+
+- Found a new campaign as **campaign master** (creator)
+- Request to join existing campaigns; master approves/rejects requests
+- Leave a campaign (removes your player and army lists from it)
+- Edit campaign details (master only)
+- Finish a campaign (read-only, history preserved) or re-open it
+- Delete a campaign (master only, permanent)
+
+### In-campaign tabs
+
 | Tab | Description |
 |-----|-------------|
-| **Battle Reports** | Log games — players, result, VPs, scenario, images, narrative reports |
-| **The Chronicle** | Campaign master entries: story beats, linked to specific battles |
-| **Army Lists** | File muster rolls with faction, points, full list text, characters and units |
-| **Players** | Enlist commanders, manage join requests, view player profiles |
-| **Calendar** | Schedule upcoming games by date |
+| **Battle Reports** | Log games — players, result, VPs, scenario, images, narrative reports. Optionally link to a scheduled game from the calendar. |
+| **The Chronicle** | Campaign master's narrative entries; can link to specific battles |
+| **Army Lists** | File muster rolls — faction, points, full list text, characters with XP, units with XP |
+| **Players** | View commanders with their avatars, manage join requests, view per-player profiles |
+| **Calendar** | Schedule upcoming games by date; only participants can delete a scheduled game |
 | **Challenge Board** | Issue and respond to personal challenges between commanders |
 
 ### Campaign types
 
 - **Standard** — open play, with optional league or tournament sub-type
-- **Path of Glory** — milestone-based progression with phase advancement
+- **Path of Glory** — milestone-based progression. Set starting points and an optional
+  Milestone Increment to auto-fill cumulative points per milestone row.
 - **Battle March** — fixed points limit throughout
-
-### Campaign lifecycle
-
-Campaigns can be **finished** by the campaign master, making them fully read-only
-(history preserved, no new data can be added). The master can **re-open** a
-finished campaign at any time. Campaigns can also be **deleted**, which permanently
-removes all associated data.
 
 ---
 
@@ -180,24 +197,39 @@ removes all associated data.
 
 ```
 blood-and-glory/
+├── .github/workflows/
+│   ├── deploy-backend.yml          ← builds image, deploys to Container Apps
+│   └── deploy-frontend.yml         ← builds Vite app, deploys to Static Web Apps
 ├── backend/                        ← Kotlin + Ktor REST API
-│   ├── Dockerfile                  ← used by Render
+│   ├── Dockerfile                  ← multi-stage build + App Insights Java agent
 │   ├── build.gradle.kts
 │   └── src/
 │       ├── main/kotlin/com/campaign/
-│       │   ├── Application.kt
+│       │   ├── Application.kt      ← Ktor setup, JWT auth, CORS
 │       │   ├── DatabaseFactory.kt
-│       │   ├── model/              ← data classes
+│       │   ├── model/              ← data classes (User, Campaign, Battle, …)
 │       │   └── routes/             ← one file per resource
+│       │       ├── AuthRoutes.kt
+│       │       ├── CampaignRoutes.kt
+│       │       ├── PlayerRoutes.kt
+│       │       ├── BattleRoutes.kt
+│       │       ├── ArmyListRoutes.kt
+│       │       ├── NarrativeRoutes.kt
+│       │       ├── CalendarRoutes.kt
+│       │       ├── ChallengeRoutes.kt
+│       │       ├── ScoreboardRoutes.kt
+│       │       ├── UserRoutes.kt
+│       │       └── Routing.kt      ← /health + route wiring
 │       └── test/kotlin/com/campaign/
 │           └── AppTest.kt          ← integration tests (embedded MongoDB)
 ├── frontend/                       ← React + TypeScript SPA (Vite)
-│   ├── vercel.json                 ← Vercel rewrite config + SPA fallback
+│   ├── staticwebapp.config.json    ← SPA routing fallback for Azure Static Web Apps
 │   ├── package.json
 │   └── src/
 │       ├── App.tsx
 │       ├── api/                    ← HTTP client + Cloudinary upload
 │       ├── components/             ← one component per section
+│       ├── types/                  ← shared TypeScript types
 │       └── styles/                 ← global CSS (gothic dark theme)
-└── sessions/                       ← development session notes
+└── docker-compose.yml              ← local MongoDB + optional backend container
 ```
